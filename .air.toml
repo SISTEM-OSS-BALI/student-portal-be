@@ -1,0 +1,14 @@
+root = "."
+
+[build]
+  cmd = "go run ./cmd/api"
+  bin = "tmp/api"
+  include_ext = ["go", "mod", "sum", "env"]
+  exclude_dir = ["tmp", "vendor", "node_modules", ".git"]
+  delay = 1000
+
+[log]
+  time = true
+
+[misc]
+  clean_on_exit = true

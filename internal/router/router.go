@@ -1,19 +1,20 @@
 package router
 
 import (
+	"os"
+	"strings"
 	"time"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-
-	"github.com/username/gin-gorm-api/internal/handler"
 )
 
-func SetupRouter(userHandler *handler.UserHandler) *gin.Engine {
+func SetupRouter() *gin.Engine {
 	r := gin.Default()
 
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:3000"},
+		AllowOrigins:     resolveAllowedOrigins(),
+		AllowWildcard:    true,
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},
@@ -26,15 +27,28 @@ func SetupRouter(userHandler *handler.UserHandler) *gin.Engine {
 		c.JSON(200, gin.H{"status": "ok"})
 	})
 
-	// routes
-	api := r.Group("/api")
-	{
-		api.POST("/users", userHandler.Create)
-		api.GET("/users", userHandler.List)
-		api.GET("/users/:id", userHandler.GetByID)
-		api.PUT("/users/:id", userHandler.Update)
-		api.DELETE("/users/:id", userHandler.Delete)
+	return r
+}
+
+func resolveAllowedOrigins() []string {
+	raw := strings.TrimSpace(os.Getenv("CORS_ALLOW_ORIGINS"))
+	if raw == "" {
+		return []string{"http://localhost:3000"}
 	}
 
-	return r
+	parts := strings.Split(raw, ",")
+	origins := make([]string, 0, len(parts))
+	for _, part := range parts {
+		value := strings.TrimSpace(part)
+		if value == "" {
+			continue
+		}
+		origins = append(origins, value)
+	}
+
+	if len(origins) == 0 {
+		return []string{"http://localhost:3000"}
+	}
+
+	return origins
 }
