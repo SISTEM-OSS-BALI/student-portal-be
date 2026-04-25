@@ -7,6 +7,11 @@ type TranslationNeeded string
 type AutoRenamePattern string
 type StatusStudent string
 type QuestionType string
+type StatementLetterDocumentStatus string
+type StatementLetterApprovalStatus string
+type SponsorLetterDocumentStatus string
+type SponsorLetterApprovalStatus string
+type GeneratedDocumentSource string
 
 const (
 	UserRoleStudent   UserRole = "STUDENT"
@@ -32,6 +37,41 @@ const (
 	StatusStudentCancel   StatusStudent = "CANCEL"
 )
 
+const (
+	StatementLetterDocumentStatusDraft             StatementLetterDocumentStatus = "DRAFT"
+	StatementLetterDocumentStatusSubmittedDirector StatementLetterDocumentStatus = "SUBMITTED_TO_DIRECTOR"
+	StatementLetterDocumentStatusRevisionRequested StatementLetterDocumentStatus = "REVISION_REQUESTED"
+	StatementLetterDocumentStatusApproved          StatementLetterDocumentStatus = "APPROVED"
+)
+
+const (
+	StatementLetterApprovalStatusPending           StatementLetterApprovalStatus = "PENDING"
+	StatementLetterApprovalStatusApproved          StatementLetterApprovalStatus = "APPROVED"
+	StatementLetterApprovalStatusRevisionRequested StatementLetterApprovalStatus = "REVISION_REQUESTED"
+	StatementLetterApprovalStatusRejected          StatementLetterApprovalStatus = "REJECTED"
+	StatementLetterApprovalStatusCanceled          StatementLetterApprovalStatus = "CANCELED"
+)
+
+const (
+	SponsorLetterDocumentStatusDraft             SponsorLetterDocumentStatus = "DRAFT"
+	SponsorLetterDocumentStatusSubmittedDirector SponsorLetterDocumentStatus = "SUBMITTED_TO_DIRECTOR"
+	SponsorLetterDocumentStatusRevisionRequested SponsorLetterDocumentStatus = "REVISION_REQUESTED"
+	SponsorLetterDocumentStatusApproved          SponsorLetterDocumentStatus = "APPROVED"
+)
+
+const (
+	SponsorLetterApprovalStatusPending           SponsorLetterApprovalStatus = "PENDING"
+	SponsorLetterApprovalStatusApproved          SponsorLetterApprovalStatus = "APPROVED"
+	SponsorLetterApprovalStatusRevisionRequested SponsorLetterApprovalStatus = "REVISION_REQUESTED"
+	SponsorLetterApprovalStatusRejected          SponsorLetterApprovalStatus = "REJECTED"
+	SponsorLetterApprovalStatusCanceled          SponsorLetterApprovalStatus = "CANCELED"
+)
+
+const (
+	GeneratedDocumentSourceAI     GeneratedDocumentSource = "AI"
+	GeneratedDocumentSourceManual GeneratedDocumentSource = "MANUAL"
+)
+
 type User struct {
 	ID                         string                              `json:"id" gorm:"primaryKey;size:25"`
 	Name                       string                              `json:"name" gorm:"size:120;not null"`
@@ -42,8 +82,15 @@ type User struct {
 	NoPhone                    *string                             `json:"no_phone,omitempty" gorm:"size:20"`
 	UpdatedAt                  time.Time                           `json:"updated_at"`
 	StageID                    *string                             `json:"stage_id,omitempty" gorm:"size:25;index"`
+	CurrentStepID              *string                             `json:"current_step_id,omitempty" gorm:"size:25;index"`
+	VisaStatus                 *string                             `json:"visa_status,omitempty" gorm:"size:25;index"`
+	VisaGrantedAt              *time.Time                          `json:"visa_granted_at,omitempty" gorm:"index"`
+	StudentStatus              StatusStudent                       `json:"student_status" gorm:"size:20;not null;default:'ON GOING'"`
+	StudentStatusUpdatedByID   *string                             `json:"student_status_updated_by_id,omitempty" gorm:"size:25;index"`
+	StudentStatusUpdatedBy     *User                               `json:"student_status_updated_by,omitempty" gorm:"constraint:OnUpdate:CASCADE,OnDelete:SET NULL;foreignKey:StudentStatusUpdatedByID;references:ID"`
+	StudentStatusUpdatedAt     *time.Time                          `json:"student_status_updated_at,omitempty" gorm:"index"`
+	NameConsultant             *string                             `json:"name_consultant,omitempty" gorm:"size:120;index"`
 	Stage                      *StageManagement                    `json:"stage,omitempty" gorm:"constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
-	Status                     StatusStudent                       `json:"status" gorm:"size:20;not null;default:'ON GOING'"`
 	NameCampus                 *string                             `json:"name_campus" gorm:"size:100"`
 	Degree                     *string                             `json:"degree" gorm:"size:100"`
 	NameDegree                 *string                             `json:"name_degree" gorm:"size:100"`
@@ -52,6 +99,7 @@ type User struct {
 	NotesStudent               []NoteStudent                       `json:"notes,omitempty" gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 	GeneratedCVAI              *GeneratedCVAIDocument              `json:"generated_cv_ai,omitempty" gorm:"foreignKey:StudentID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 	GeneratedStatementLetterAI *GeneratedStatementLetterAIDocument `json:"generated_statement_letter_ai,omitempty" gorm:"foreignKey:StudentID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	GeneratedSponsorLetterAI   *GeneratedSponsorLetterAIDocument   `json:"generated_sponsor_letter_ai,omitempty" gorm:"foreignKey:StudentID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 }
 
 type NoteStudent struct {
@@ -95,13 +143,18 @@ type ChildStepsManagement struct {
 	UpdatedAt time.Time         `json:"updated_at"`
 }
 
+
+
 type CountryManagement struct {
-	ID           string                   `json:"id" gorm:"primaryKey;size:25"`
-	NameCountry  string                   `json:"name" gorm:"size:120;not null"`
-	Stages       []StageManagement        `json:"stages,omitempty" gorm:"foreignKey:CountryID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
-	CountrySteps []CountryStepsManagement `json:"country_steps,omitempty" gorm:"foreignKey:CountryID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
-	CreatedAt    time.Time                `json:"created_at"`
-	UpdatedAt    time.Time                `json:"updated_at"`
+
+	ID            string                       `json:"id" gorm:"primaryKey;size:25"`
+	NameCountry   string                       `json:"name" gorm:"size:120;not null"`
+	Stages        []StageManagement            `json:"stages,omitempty" gorm:"foreignKey:CountryID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	CountrySteps  []CountryStepsManagement     `json:"country_steps,omitempty" gorm:"foreignKey:CountryID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	Informations  []InformationCountryManagement `json:"informations,omitempty" gorm:"foreignKey:CountryID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	CreatedAt     time.Time `json:"created_at"`
+	UpdatedAt     time.Time `json:"updated_at"`
+
 }
 
 type StageManagement struct {
@@ -208,6 +261,7 @@ type ChatMessage struct {
 	EditedAt       *time.Time `json:"edited_at,omitempty"`
 	DeletedAt      *time.Time `json:"deleted_at,omitempty" gorm:"index"`
 
+	Sender      *User                   `json:"sender,omitempty" gorm:"constraint:OnUpdate:CASCADE,OnDelete:RESTRICT;foreignKey:SenderID;references:ID"`
 	Attachments []ChatMessageAttachment `json:"attachments,omitempty" gorm:"foreignKey:MessageID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 	Statuses    []ChatMessageStatus     `json:"statuses,omitempty" gorm:"foreignKey:MessageID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 	Mentions    []ChatMessageMention    `json:"mentions,omitempty" gorm:"foreignKey:MessageID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
@@ -356,20 +410,127 @@ type GeneratedCVAIDocument struct {
 }
 
 type GeneratedStatementLetterAIDocument struct {
-	ID           string    `json:"id" gorm:"primaryKey;size:25"`
-	StudentID    string    `json:"student_id" gorm:"size:25;not null;uniqueIndex"`
-	Student      *User     `json:"student,omitempty" gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:StudentID;references:ID"`
-	FileURL      string    `json:"file_url" gorm:"type:text;not null"`
-	FilePath     *string   `json:"file_path,omitempty" gorm:"type:text"`
-	FileName     *string   `json:"file_name,omitempty" gorm:"size:191"`
-	FileType     *string   `json:"file_type,omitempty" gorm:"size:100"`
-	WordFileURL  *string   `json:"word_file_url,omitempty" gorm:"type:text"`
-	WordFilePath *string   `json:"word_file_path,omitempty" gorm:"type:text"`
-	WordFileName *string   `json:"word_file_name,omitempty" gorm:"size:191"`
-	WordFileType *string   `json:"word_file_type,omitempty" gorm:"size:100"`
-	Status       *string   `json:"status,omitempty" gorm:"size:20"`
-	CreatedAt    time.Time `json:"created_at"`
-	UpdatedAt    time.Time `json:"updated_at"`
+	ID        string `json:"id" gorm:"primaryKey;size:25"`
+	StudentID string `json:"student_id" gorm:"size:25;not null;uniqueIndex"`
+	Student   *User  `json:"student,omitempty" gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:StudentID;references:ID"`
+
+	FileURL  string  `json:"file_url" gorm:"type:text;not null"`
+	FilePath *string `json:"file_path,omitempty" gorm:"type:text"`
+	FileName *string `json:"file_name,omitempty" gorm:"size:191"`
+	FileType *string `json:"file_type,omitempty" gorm:"size:100"`
+
+	WordFileURL  *string `json:"word_file_url,omitempty" gorm:"type:text"`
+	WordFilePath *string `json:"word_file_path,omitempty" gorm:"type:text"`
+	WordFileName *string `json:"word_file_name,omitempty" gorm:"size:191"`
+	WordFileType *string `json:"word_file_type,omitempty" gorm:"size:100"`
+
+	Status StatementLetterDocumentStatus `json:"status" gorm:"size:40;not null;default:'DRAFT'"`
+	Source GeneratedDocumentSource       `json:"source" gorm:"size:20;not null;default:'AI'"`
+
+	SubmittedToDirectorAt *time.Time `json:"submitted_to_director_at,omitempty"`
+	ApprovedAt            *time.Time `json:"approved_at,omitempty"`
+	RevisionRequestedAt   *time.Time `json:"revision_requested_at,omitempty"`
+
+	CurrentApprovalID *string                    `json:"current_approval_id,omitempty" gorm:"size:25;index"`
+	CurrentApproval   *StatementLetterAIApproval `json:"current_approval,omitempty" gorm:"foreignKey:CurrentApprovalID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
+
+	Approvals []StatementLetterAIApproval `json:"approvals,omitempty" gorm:"foreignKey:DocumentID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	CreatedAt time.Time                   `json:"created_at"`
+	UpdatedAt time.Time                   `json:"updated_at"`
+}
+
+type StatementLetterAIApproval struct {
+	ID         string                              `json:"id" gorm:"primaryKey;size:25"`
+	DocumentID string                              `json:"document_id" gorm:"size:25;not null;index"`
+	Document   *GeneratedStatementLetterAIDocument `json:"document,omitempty" gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:DocumentID;references:ID"`
+
+	ReviewerID string `json:"reviewer_id" gorm:"size:25;not null;index"`
+	Reviewer   *User  `json:"reviewer,omitempty" gorm:"constraint:OnUpdate:CASCADE,OnDelete:RESTRICT;foreignKey:ReviewerID;references:ID"`
+
+	Status     StatementLetterApprovalStatus `json:"status" gorm:"size:30;not null;default:'PENDING'"`
+	Note       *string                       `json:"note,omitempty" gorm:"type:text"`
+	ReviewedAt *time.Time                    `json:"reviewed_at,omitempty"`
+
+	Logs      []StatementLetterAIApprovalLog `json:"logs,omitempty" gorm:"foreignKey:ApprovalID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	CreatedAt time.Time                      `json:"created_at"`
+	UpdatedAt time.Time                      `json:"updated_at"`
+}
+
+type StatementLetterAIApprovalLog struct {
+	ID         string                     `json:"id" gorm:"primaryKey;size:25"`
+	ApprovalID string                     `json:"approval_id" gorm:"size:25;not null;index"`
+	Approval   *StatementLetterAIApproval `json:"approval,omitempty" gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+
+	ActorID string `json:"actor_id" gorm:"size:25;not null;index"`
+	Actor   *User  `json:"actor,omitempty" gorm:"constraint:OnUpdate:CASCADE,OnDelete:RESTRICT;"`
+
+	FromStatus *StatementLetterApprovalStatus `json:"from_status,omitempty" gorm:"size:30"`
+	ToStatus   StatementLetterApprovalStatus  `json:"to_status" gorm:"size:30;not null"`
+	Note       *string                        `json:"note,omitempty" gorm:"type:text"`
+
+	CreatedAt time.Time `json:"created_at"`
+}
+
+type GeneratedSponsorLetterAIDocument struct {
+	ID        string `json:"id" gorm:"primaryKey;size:25"`
+	StudentID string `json:"student_id" gorm:"size:25;not null;uniqueIndex"`
+	Student   *User  `json:"student,omitempty" gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:StudentID;references:ID"`
+
+	FileURL  string  `json:"file_url" gorm:"type:text;not null"`
+	FilePath *string `json:"file_path,omitempty" gorm:"type:text"`
+	FileName *string `json:"file_name,omitempty" gorm:"size:191"`
+	FileType *string `json:"file_type,omitempty" gorm:"size:100"`
+
+	WordFileURL  *string `json:"word_file_url,omitempty" gorm:"type:text"`
+	WordFilePath *string `json:"word_file_path,omitempty" gorm:"type:text"`
+	WordFileName *string `json:"word_file_name,omitempty" gorm:"size:191"`
+	WordFileType *string `json:"word_file_type,omitempty" gorm:"size:100"`
+
+	Status SponsorLetterDocumentStatus `json:"status" gorm:"size:40;not null;default:'DRAFT'"`
+	Source GeneratedDocumentSource     `json:"source" gorm:"size:20;not null;default:'AI'"`
+
+	SubmittedToDirectorAt *time.Time `json:"submitted_to_director_at,omitempty"`
+	ApprovedAt            *time.Time `json:"approved_at,omitempty"`
+	RevisionRequestedAt   *time.Time `json:"revision_requested_at,omitempty"`
+
+	CurrentApprovalID *string                  `json:"current_approval_id,omitempty" gorm:"size:25;index"`
+	CurrentApproval   *SponsorLetterAIApproval `json:"current_approval,omitempty" gorm:"foreignKey:CurrentApprovalID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
+
+	Approvals []SponsorLetterAIApproval `json:"approvals,omitempty" gorm:"foreignKey:DocumentID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	CreatedAt time.Time                 `json:"created_at"`
+	UpdatedAt time.Time                 `json:"updated_at"`
+}
+
+type SponsorLetterAIApproval struct {
+	ID         string                            `json:"id" gorm:"primaryKey;size:25"`
+	DocumentID string                            `json:"document_id" gorm:"size:25;not null;index"`
+	Document   *GeneratedSponsorLetterAIDocument `json:"document,omitempty" gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:DocumentID;references:ID"`
+
+	ReviewerID string `json:"reviewer_id" gorm:"size:25;not null;index"`
+	Reviewer   *User  `json:"reviewer,omitempty" gorm:"constraint:OnUpdate:CASCADE,OnDelete:RESTRICT;foreignKey:ReviewerID;references:ID"`
+
+	Status     SponsorLetterApprovalStatus `json:"status" gorm:"size:30;not null;default:'PENDING'"`
+	Note       *string                     `json:"note,omitempty" gorm:"type:text"`
+	ReviewedAt *time.Time                  `json:"reviewed_at,omitempty"`
+
+	Logs      []SponsorLetterAIApprovalLog `json:"logs,omitempty" gorm:"foreignKey:ApprovalID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	CreatedAt time.Time                    `json:"created_at"`
+	UpdatedAt time.Time                    `json:"updated_at"`
+}
+
+type SponsorLetterAIApprovalLog struct {
+	ID         string                   `json:"id" gorm:"primaryKey;size:25"`
+	ApprovalID string                   `json:"approval_id" gorm:"size:25;not null;index"`
+	Approval   *SponsorLetterAIApproval `json:"approval,omitempty" gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+
+	ActorID string `json:"actor_id" gorm:"size:25;not null;index"`
+	Actor   *User  `json:"actor,omitempty" gorm:"constraint:OnUpdate:CASCADE,OnDelete:RESTRICT;"`
+
+	FromStatus *SponsorLetterApprovalStatus `json:"from_status,omitempty" gorm:"size:30"`
+	ToStatus   SponsorLetterApprovalStatus  `json:"to_status" gorm:"size:30;not null"`
+	Note       *string                      `json:"note,omitempty" gorm:"type:text"`
+
+	CreatedAt time.Time `json:"created_at"`
 }
 
 type AnswerApproval struct {
@@ -421,9 +582,22 @@ type TicketMessage struct {
 	ID             string            `json:"id" gorm:"primaryKey;size:25"`
 	Name           string            `json:"name" gorm:"size:120;not null"`
 	UserID         string            `json:"user_id" gorm:"size:25;not null;index"`
-	ConversationID string            `json:"conversation_id" gorm:"size:25;not null;index"`
+	ConversationID *string           `json:"conversation_id,omitempty" gorm:"size:25;index"`
+	Status         string            `json:"status" gorm:"size:20;not null;default:'open'"`
 	User           *User             `json:"user,omitempty" gorm:"constraint:OnUpdate:CASCADE,OnDelete:RESTRICT;foreignKey:UserID;references:ID"`
 	Conversation   *ChatConversation `json:"conversation,omitempty" gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;foreignKey:ConversationID;references:ID"`
 	CreatedAt      time.Time         `json:"created_at"`
 	UpdatedAt      time.Time         `json:"updated_at"`
+}
+
+type InformationCountryManagement struct {
+	ID          string    `json:"id" gorm:"primaryKey;size:25"`
+	Slug        string    `json:"slug" gorm:"size:25;not null;uniqueIndex"`
+	Title       string    `json:"title" gorm:"size:120;not null"`
+	Description *string   `json:"description,omitempty" gorm:"type:text"`
+	Priority    string       `json:"priority" gorm:"not null;default:'normal'"`
+	CountryID   string    `json:"country_id" gorm:"size:25;not null;index"`
+	Country     CountryManagement `json:"country" gorm:"foreignKey:CountryID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
 }

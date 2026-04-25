@@ -8,15 +8,21 @@ import (
 )
 
 type CreateDTO struct {
-	Name           string `json:"name" binding:"required,max=120"`
-	UserID         string `json:"user_id" binding:"required"`
-	ConversationID string `json:"conversation_id" binding:"required"`
+	Name           string  `json:"name" binding:"required,max=120"`
+	UserID         string  `json:"user_id" binding:"required"`
+	ConversationID *string `json:"conversation_id"`
+	Status         *string `json:"status"`
 }
 
 type UpdateDTO struct {
 	Name           *string `json:"name"`
 	UserID         *string `json:"user_id"`
 	ConversationID *string `json:"conversation_id"`
+	Status         *string `json:"status"`
+}
+
+type UpdateStatusDTO struct {
+	Status string `json:"status" binding:"required"`
 }
 
 type UserResponseDTO struct {
@@ -34,7 +40,8 @@ type ResponseDTO struct {
 	ID             string                   `json:"id"`
 	Name           string                   `json:"name"`
 	UserID         string                   `json:"user_id"`
-	ConversationID string                   `json:"conversation_id"`
+	ConversationID *string                  `json:"conversation_id,omitempty"`
+	Status         string                   `json:"status"`
 	User           *UserResponseDTO         `json:"user,omitempty"`
 	Conversation   *ConversationResponseDTO `json:"conversation,omitempty"`
 	CreatedAt      time.Time                `json:"created_at"`
@@ -47,6 +54,7 @@ func NewResponseDTO(message schema.TicketMessage) ResponseDTO {
 		Name:           message.Name,
 		UserID:         message.UserID,
 		ConversationID: message.ConversationID,
+		Status:         message.Status,
 		CreatedAt:      message.CreatedAt,
 		UpdatedAt:      message.UpdatedAt,
 	}
@@ -80,6 +88,17 @@ func NewResponseListDTO(messages []schema.TicketMessage) []ResponseDTO {
 func (d CreateDTO) Normalize() CreateDTO {
 	d.Name = strings.TrimSpace(d.Name)
 	d.UserID = strings.TrimSpace(d.UserID)
-	d.ConversationID = strings.TrimSpace(d.ConversationID)
+	if d.ConversationID != nil {
+		conversationID := strings.TrimSpace(*d.ConversationID)
+		if conversationID == "" {
+			d.ConversationID = nil
+		} else {
+			d.ConversationID = &conversationID
+		}
+	}
+	if d.Status != nil {
+		status := strings.TrimSpace(*d.Status)
+		d.Status = &status
+	}
 	return d
 }

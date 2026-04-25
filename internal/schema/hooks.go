@@ -124,6 +124,31 @@ func (d *GeneratedStatementLetterAIDocument) BeforeCreate(tx *gorm.DB) error {
 	return nil
 }
 
+func (a *StatementLetterAIApproval) BeforeCreate(tx *gorm.DB) error {
+	setCUIDIfEmpty(&a.ID)
+	return nil
+}
+
+func (l *StatementLetterAIApprovalLog) BeforeCreate(tx *gorm.DB) error {
+	setCUIDIfEmpty(&l.ID)
+	return nil
+}
+
+func (d *GeneratedSponsorLetterAIDocument) BeforeCreate(tx *gorm.DB) error {
+	setCUIDIfEmpty(&d.ID)
+	return nil
+}
+
+func (a *SponsorLetterAIApproval) BeforeCreate(tx *gorm.DB) error {
+	setCUIDIfEmpty(&a.ID)
+	return nil
+}
+
+func (l *SponsorLetterAIApprovalLog) BeforeCreate(tx *gorm.DB) error {
+	setCUIDIfEmpty(&l.ID)
+	return nil
+}
+
 func (a *AnswerApproval) BeforeCreate(tx *gorm.DB) error {
 	setCUIDIfEmpty(&a.ID)
 	return nil
@@ -141,5 +166,10 @@ func (d *DocumentTranslation) BeforeCreate(tx *gorm.DB) error {
 
 func (t *TicketMessage) BeforeCreate(tx *gorm.DB) error {
 	setCUIDIfEmpty(&t.ID)
+	return nil
+}
+
+func (i *InformationCountryManagement) BeforeCreate(tx *gorm.DB) error {
+	setCUIDIfEmpty(&i.ID)
 	return nil
 }

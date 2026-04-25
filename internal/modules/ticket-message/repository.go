@@ -13,6 +13,7 @@ type Repository interface {
 	GetByID(id string) (schema.TicketMessage, error)
 	Update(message *schema.TicketMessage) error
 	Delete(id string) error
+	DeleteWithConversation(id string) error
 }
 
 type GormRepository struct {
@@ -75,4 +76,19 @@ func (r *GormRepository) Update(message *schema.TicketMessage) error {
 
 func (r *GormRepository) Delete(id string) error {
 	return r.db.Delete(&schema.TicketMessage{}, "id = ?", id).Error
+}
+
+func (r *GormRepository) DeleteWithConversation(id string) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		var message schema.TicketMessage
+		if err := tx.First(&message, "id = ?", id).Error; err != nil {
+			return err
+		}
+
+		if message.ConversationID != nil && *message.ConversationID != "" {
+			return tx.Delete(&schema.ChatConversation{}, "id = ?", *message.ConversationID).Error
+		}
+
+		return tx.Delete(&schema.TicketMessage{}, "id = ?", id).Error
+	})
 }

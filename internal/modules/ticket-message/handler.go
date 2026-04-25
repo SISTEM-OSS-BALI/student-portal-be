@@ -85,9 +85,34 @@ func (h *Handler) Update(c *gin.Context) {
 	c.JSON(http.StatusOK, NewResponseDTO(message))
 }
 
+func (h *Handler) UpdateStatus(c *gin.Context) {
+	var input UpdateStatusDTO
+	if err := c.ShouldBindJSON(&input); err != nil {
+		httpx.RespondError(c, http.StatusBadRequest, "validation_error", err.Error(), nil)
+		return
+	}
+
+	message, err := h.service.UpdateStatus(c.Param("id"), input)
+	if err != nil {
+		httpx.RespondError(c, http.StatusBadRequest, "ticket_message_status_update_failed", err.Error(), nil)
+		return
+	}
+
+	c.JSON(http.StatusOK, NewResponseDTO(message))
+}
+
 func (h *Handler) Delete(c *gin.Context) {
 	if err := h.service.Delete(c.Param("id")); err != nil {
 		httpx.RespondError(c, http.StatusBadRequest, "ticket_message_delete_failed", err.Error(), nil)
+		return
+	}
+
+	c.Status(http.StatusNoContent)
+}
+
+func (h *Handler) DeleteWithConversation(c *gin.Context) {
+	if err := h.service.DeleteWithConversation(c.Param("id")); err != nil {
+		httpx.RespondError(c, http.StatusBadRequest, "ticket_message_delete_with_conversation_failed", err.Error(), nil)
 		return
 	}
 

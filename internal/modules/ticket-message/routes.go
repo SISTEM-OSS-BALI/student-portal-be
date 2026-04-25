@@ -19,5 +19,7 @@ func RegisterRoutes(rg *gin.RouterGroup, db *gorm.DB) {
 	protected.GET("/ticket-messages", handler.List)
 	protected.GET("/ticket-messages/:id", handler.GetByID)
 	protected.PUT("/ticket-messages/:id", handler.Update)
+	protected.PUT("/ticket-messages/:id/status", handler.UpdateStatus)
+	protected.DELETE("/ticket-messages/:id/with-conversation", handler.DeleteWithConversation)
 	protected.DELETE("/ticket-messages/:id", handler.Delete)
 }

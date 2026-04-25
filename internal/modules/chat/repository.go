@@ -195,7 +195,7 @@ func (r *GormRepository) UpsertMessageStatus(messageID, userID, status string, a
 
 func (r *GormRepository) GetMessageByID(id string) (schema.ChatMessage, error) {
 	var message schema.ChatMessage
-	if err := r.db.Preload("Mentions").Preload("Attachments").First(&message, "id = ?", id).Error; err != nil {
+	if err := r.db.Preload("Sender").Preload("Mentions").Preload("Attachments").First(&message, "id = ?", id).Error; err != nil {
 		return schema.ChatMessage{}, err
 	}
 	return message, nil
@@ -203,7 +203,7 @@ func (r *GormRepository) GetMessageByID(id string) (schema.ChatMessage, error) {
 
 func (r *GormRepository) ListMessages(conversationID string, limit, offset int) ([]schema.ChatMessage, error) {
 	var messages []schema.ChatMessage
-	query := r.db.Preload("Mentions").Preload("Attachments").Where("conversation_id = ?", conversationID).Order("created_at desc")
+	query := r.db.Preload("Sender").Preload("Mentions").Preload("Attachments").Where("conversation_id = ?", conversationID).Order("created_at desc")
 	if limit > 0 {
 		query = query.Limit(limit)
 	}

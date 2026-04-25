@@ -1,4 +1,4 @@
-package generatestatementletterai
+package generatesponsorletterai
 
 type GenerateDTO struct {
 	Prompt         string               `json:"prompt"`
@@ -8,8 +8,6 @@ type GenerateDTO struct {
 	StudentCountry *string              `json:"student_country"`
 	CampusName     *string              `json:"campus_name"`
 	Degree         *string              `json:"degree"`
-	ChecklistPath  *string              `json:"checklist_path"`
-	ChecklistURL   *string              `json:"checklist_url"`
 	Answers        []GenerateAnswerDTO  `json:"answers"`
 	Sections       []GenerateSectionDTO `json:"sections"`
 	Meta           *GenerateMetaDTO     `json:"meta"`
@@ -37,8 +35,6 @@ type GenerateSectionItem struct {
 	Question string `json:"question"`
 	Answer   string `json:"answer"`
 }
-
-
 
 type GenerateMetaDTO struct {
 	LetterStatus string `json:"letter_status"`

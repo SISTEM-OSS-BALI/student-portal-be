@@ -1,4 +1,4 @@
-package generatestatementletterai
+package generatesponsorletterai
 
 import (
 	"errors"
@@ -14,9 +14,7 @@ import (
 	"github.com/username/gin-gorm-api/internal/modules/auth"
 )
 
-type GeneratedDocumentHandler struct {
-	service *GeneratedDocumentService
-}
+type GeneratedDocumentHandler struct{ service *GeneratedDocumentService }
 
 func NewGeneratedDocumentHandler(service *GeneratedDocumentService) *GeneratedDocumentHandler {
 	return &GeneratedDocumentHandler{service: service}
@@ -37,13 +35,11 @@ func (h *GeneratedDocumentHandler) Upsert(c *gin.Context) {
 		httpx.RespondError(c, http.StatusBadRequest, "validation_error", err.Error(), nil)
 		return
 	}
-
 	doc, err := h.service.Upsert(input)
 	if err != nil {
-		httpx.RespondError(c, http.StatusInternalServerError, "generated_statement_letter_ai_document_upsert_failed", err.Error(), nil)
+		httpx.RespondError(c, http.StatusInternalServerError, "generated_sponsor_letter_ai_document_upsert_failed", err.Error(), nil)
 		return
 	}
-
 	c.JSON(http.StatusOK, NewGeneratedDocumentResponseDTO(doc))
 }
 
@@ -57,28 +53,25 @@ func (h *GeneratedDocumentHandler) SubmitToDirector(c *gin.Context) {
 		httpx.RespondError(c, http.StatusUnauthorized, "unauthorized", "missing auth claims", nil)
 		return
 	}
-
 	var input SubmitToDirectorDTO
 	if err := c.ShouldBindJSON(&input); err != nil && !errors.Is(err, io.EOF) {
 		httpx.RespondError(c, http.StatusBadRequest, "validation_error", err.Error(), nil)
 		return
 	}
-
 	doc, err := h.service.SubmitToDirector(c.Param("id"), claims.UserID, claims.Role, input.Note)
 	if err != nil {
 		statusCode := http.StatusBadRequest
 		switch {
 		case errors.Is(err, gorm.ErrRecordNotFound):
 			statusCode = http.StatusNotFound
-		case errors.Is(err, ErrStatementLetterAlreadySubmitted):
+		case errors.Is(err, ErrSponsorLetterAlreadySubmitted):
 			statusCode = http.StatusConflict
-		case errors.Is(err, ErrStatementLetterDirectorNotFound):
+		case errors.Is(err, ErrSponsorLetterDirectorNotFound):
 			statusCode = http.StatusBadRequest
 		}
-		httpx.RespondError(c, statusCode, "generated_statement_letter_ai_document_submit_failed", err.Error(), nil)
+		httpx.RespondError(c, statusCode, "generated_sponsor_letter_ai_document_submit_failed", err.Error(), nil)
 		return
 	}
-
 	c.JSON(http.StatusOK, NewGeneratedDocumentResponseDTO(doc))
 }
 
@@ -88,26 +81,23 @@ func (h *GeneratedDocumentHandler) CancelSubmitToDirector(c *gin.Context) {
 		httpx.RespondError(c, http.StatusUnauthorized, "unauthorized", "missing auth claims", nil)
 		return
 	}
-
 	var input SubmitToDirectorDTO
 	if err := c.ShouldBindJSON(&input); err != nil && !errors.Is(err, io.EOF) {
 		httpx.RespondError(c, http.StatusBadRequest, "validation_error", err.Error(), nil)
 		return
 	}
-
 	doc, err := h.service.CancelSubmitToDirector(c.Param("id"), claims.UserID, input.Note)
 	if err != nil {
 		statusCode := http.StatusBadRequest
 		switch {
 		case errors.Is(err, gorm.ErrRecordNotFound):
 			statusCode = http.StatusNotFound
-		case errors.Is(err, ErrStatementLetterSubmissionNotCancelable):
+		case errors.Is(err, ErrSponsorLetterSubmissionNotCancelable):
 			statusCode = http.StatusConflict
 		}
-		httpx.RespondError(c, statusCode, "generated_statement_letter_ai_document_cancel_submit_failed", err.Error(), nil)
+		httpx.RespondError(c, statusCode, "generated_sponsor_letter_ai_document_cancel_submit_failed", err.Error(), nil)
 		return
 	}
-
 	c.JSON(http.StatusOK, NewGeneratedDocumentResponseDTO(doc))
 }
 
@@ -115,24 +105,22 @@ func (h *GeneratedDocumentHandler) List(c *gin.Context) {
 	studentID := c.Query("student_id")
 	docs, err := h.service.ListByStudentID(studentID)
 	if err != nil {
-		httpx.RespondError(c, http.StatusInternalServerError, "generated_statement_letter_ai_document_list_failed", err.Error(), nil)
+		httpx.RespondError(c, http.StatusInternalServerError, "generated_sponsor_letter_ai_document_list_failed", err.Error(), nil)
 		return
 	}
-
-	c.JSON(http.StatusOK, NewGeneratedDocumentResponseListDTO(docs))
+	c.JSON(http.StatusOK, NewGeneratedDocumentResponseDTOs(docs))
 }
 
 func (h *GeneratedDocumentHandler) GetByStudentID(c *gin.Context) {
 	doc, err := h.service.GetByStudentID(c.Param("student_id"))
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			httpx.RespondError(c, http.StatusNotFound, "generated_statement_letter_ai_document_not_found", "generated statement letter ai document not found", nil)
+			httpx.RespondError(c, http.StatusNotFound, "generated_sponsor_letter_ai_document_not_found", "generated sponsor letter ai document not found", nil)
 			return
 		}
-		httpx.RespondError(c, http.StatusInternalServerError, "generated_statement_letter_ai_document_get_failed", err.Error(), nil)
+		httpx.RespondError(c, http.StatusInternalServerError, "generated_sponsor_letter_ai_document_get_failed", err.Error(), nil)
 		return
 	}
-
 	c.JSON(http.StatusOK, NewGeneratedDocumentResponseDTO(doc))
 }
 
@@ -143,12 +131,12 @@ func (h *GeneratedDocumentHandler) DownloadPDF(c *gin.Context) {
 		switch {
 		case errors.Is(err, gorm.ErrRecordNotFound):
 			statusCode = http.StatusNotFound
-		case errors.Is(err, ErrStatementLetterDownloadNotApproved):
+		case errors.Is(err, ErrSponsorLetterDownloadNotApproved):
 			statusCode = http.StatusConflict
-		case errors.Is(err, ErrStatementLetterDownloadUnavailable):
+		case errors.Is(err, ErrSponsorLetterDownloadUnavailable):
 			statusCode = http.StatusNotFound
 		}
-		httpx.RespondError(c, statusCode, "generated_statement_letter_ai_document_download_failed", err.Error(), nil)
+		httpx.RespondError(c, statusCode, "generated_sponsor_letter_ai_document_download_failed", err.Error(), nil)
 		return
 	}
 
@@ -158,7 +146,7 @@ func (h *GeneratedDocumentHandler) DownloadPDF(c *gin.Context) {
 			return
 		}
 		if strings.TrimSpace(download.FileURL) == "" {
-			httpx.RespondError(c, http.StatusNotFound, "generated_statement_letter_ai_document_download_failed", "statement letter pdf file not found", nil)
+			httpx.RespondError(c, http.StatusNotFound, "generated_sponsor_letter_ai_document_download_failed", "sponsor letter pdf file not found", nil)
 			return
 		}
 	}

@@ -1,6 +1,8 @@
 package user
 
 import (
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/username/gin-gorm-api/internal/schema"
@@ -9,9 +11,13 @@ import (
 type CreateDTO struct {
 	Name             string  `json:"name" binding:"required"`
 	Email            string  `json:"email" binding:"required,email"`
-	Role             string  `json:"role" binding:"required,oneof=student admission director" default:"student"`
+	Role             string  `json:"role" binding:"omitempty,oneof=student admission director" default:"student"`
 	Password         string  `json:"password" binding:"required,min=8"`
 	StageID          *string `json:"stage_id"`
+	CurrentStepID    *string `json:"current_step_id"`
+	VisaStatus       *string `json:"visa_status"`
+	StudentStatus    *string `json:"student_status"`
+	NameConsultant   *string `json:"name_consultant"`
 	NoPhone          *string `json:"no_phone"`
 	NameCampus       *string `json:"name_campus"`
 	Degree           *string `json:"degree"`
@@ -26,6 +32,10 @@ type UpdateDTO struct {
 	Role             *string `json:"role"`
 	NoPhone          *string `json:"no_phone"`
 	StageID          *string `json:"stage_id"`
+	CurrentStepID    *string `json:"current_step_id"`
+	VisaStatus       *string `json:"visa_status"`
+	StudentStatus    *string `json:"student_status"`
+	NameConsultant   *string `json:"name_consultant"`
 	NameCampus       *string `json:"name_campus"`
 	NameDegree       *string `json:"name_degree"`
 	Degree           *string `json:"degree"`
@@ -37,23 +47,42 @@ type PatchQuotaTranslationDTO struct {
 	TranslationQuota int `json:"translation_quota" binding:"required,gte=0"`
 }
 
+type PatchVisaStatusDTO struct {
+	VisaStatus *string `json:"visa_status" binding:"required"`
+}
+
+type PatchStudentStatusDTO struct {
+	StudentStatus *string `json:"student_status" binding:"required"`
+}
+
 type ResponseDTO struct {
-	ID               string           `json:"id"`
-	Name             string           `json:"name"`
-	Email            string           `json:"email"`
-	Role             string           `json:"role"`
-	NoPhone          *string          `json:"no_phone,omitempty"`
-	StageID          *string          `json:"stage_id,omitempty"`
-	Stage            *StageDTO        `json:"stage,omitempty"`
-	Status           string           `json:"status"`
-	NameCampus       *string          `json:"name_campus,omitempty"`
-	VisaType         *string          `json:"visa_type,omitempty"`
-	Degree           *string          `json:"degree,omitempty"`
-	NameDegree       *string          `json:"name_degree,omitempty"`
-	TranslationQuota int              `json:"translation_quota"`
-	NotesStudent     []NoteStudentDTO `json:"notes,omitempty"`
-	CreatedAt        time.Time        `json:"created_at"`
-	UpdatedAt        time.Time        `json:"updated_at"`
+	ID                     string           `json:"id"`
+	Name                   string           `json:"name"`
+	Email                  string           `json:"email"`
+	Role                   string           `json:"role"`
+	NoPhone                *string          `json:"no_phone,omitempty"`
+	StageID                *string          `json:"stage_id,omitempty"`
+	CurrentStepID          *string          `json:"current_step_id,omitempty"`
+	VisaStatus             *string          `json:"visa_status,omitempty"`
+	VisaGrantedAt          *time.Time       `json:"visa_granted_at,omitempty"`
+	VisaGrantDurationDays  *int             `json:"visa_grant_duration_days,omitempty"`
+	VisaGrantDurationLabel *string          `json:"visa_grant_duration_label,omitempty"`
+	StudentStatus          string           `json:"student_status"`
+	StudentStatusUpdatedByID    *string          `json:"student_status_updated_by_id,omitempty"`
+	StudentStatusUpdatedByName  *string          `json:"student_status_updated_by_name,omitempty"`
+	StudentStatusUpdatedAt      *time.Time       `json:"student_status_updated_at,omitempty"`
+	StudentStatusUpdatedAtLabel *string          `json:"student_status_updated_at_label,omitempty"`
+	NameConsultant         *string          `json:"name_consultant,omitempty"`
+	Stage                  *StageDTO        `json:"stage,omitempty"`
+	NameCampus             *string          `json:"name_campus,omitempty"`
+	VisaType               *string          `json:"visa_type,omitempty"`
+	Degree                 *string          `json:"degree,omitempty"`
+	NameDegree             *string          `json:"name_degree,omitempty"`
+	TranslationQuota       int              `json:"translation_quota"`
+	NotesStudent           []NoteStudentDTO `json:"notes,omitempty"`
+	JoinedAt               time.Time        `json:"joined_at"`
+	CreatedAt              time.Time        `json:"created_at"`
+	UpdatedAt              time.Time        `json:"updated_at"`
 }
 
 type StageDTO struct {
@@ -109,23 +138,38 @@ type ChildDTO struct {
 }
 
 func NewResponseDTO(user schema.User) ResponseDTO {
+	visaGrantDurationDays, visaGrantDurationLabel := buildVisaGrantDuration(user.CreatedAt, user.VisaGrantedAt)
+	studentStatusUpdatedByName := optionalUserName(user.StudentStatusUpdatedBy)
+	studentStatusUpdatedAtLabel := formatStudentStatusUpdatedAtLabel(user.StudentStatusUpdatedAt)
+
 	return ResponseDTO{
-		ID:               user.ID,
-		Name:             user.Name,
-		Email:            user.Email,
-		Role:             string(user.Role),
-		NoPhone:          user.NoPhone,
-		StageID:          user.StageID,
-		Status:           string(user.Status),
-		NameCampus:       user.NameCampus,
-		Degree:           user.Degree,
-		NameDegree:       user.NameDegree,
-		VisaType:         user.VisaType,
-		CreatedAt:        user.CreatedAt,
-		UpdatedAt:        user.UpdatedAt,
-		Stage:            newStageDTO(user.Stage),
-		NotesStudent:     newNoteStudentListDTO(user.NotesStudent),
-		TranslationQuota: user.TranslationQuota,
+		ID:                     user.ID,
+		Name:                   user.Name,
+		Email:                  user.Email,
+		Role:                   string(user.Role),
+		NoPhone:                user.NoPhone,
+		StageID:                user.StageID,
+		CurrentStepID:          user.CurrentStepID,
+		VisaStatus:             user.VisaStatus,
+		VisaGrantedAt:          user.VisaGrantedAt,
+		VisaGrantDurationDays:  visaGrantDurationDays,
+		VisaGrantDurationLabel: visaGrantDurationLabel,
+		StudentStatus:          string(user.StudentStatus),
+		StudentStatusUpdatedByID:    user.StudentStatusUpdatedByID,
+		StudentStatusUpdatedByName:  studentStatusUpdatedByName,
+		StudentStatusUpdatedAt:      user.StudentStatusUpdatedAt,
+		StudentStatusUpdatedAtLabel: studentStatusUpdatedAtLabel,
+		NameConsultant:         user.NameConsultant,
+		NameCampus:             user.NameCampus,
+		Degree:                 user.Degree,
+		NameDegree:             user.NameDegree,
+		VisaType:               user.VisaType,
+		JoinedAt:               user.CreatedAt,
+		CreatedAt:              user.CreatedAt,
+		UpdatedAt:              user.UpdatedAt,
+		Stage:                  newStageDTO(user.Stage),
+		NotesStudent:           newNoteStudentListDTO(user.NotesStudent),
+		TranslationQuota:       user.TranslationQuota,
 	}
 }
 
@@ -224,4 +268,96 @@ func newStepListDTO(items []schema.CountryStepsManagement) []StepDTO {
 		})
 	}
 	return out
+}
+
+func buildVisaGrantDuration(joinedAt time.Time, visaGrantedAt *time.Time) (*int, *string) {
+	if joinedAt.IsZero() || visaGrantedAt == nil || visaGrantedAt.IsZero() {
+		return nil, nil
+	}
+
+	totalDays := int(visaGrantedAt.Sub(joinedAt).Hours() / 24)
+	if totalDays < 0 {
+		totalDays = 0
+	}
+
+	label := formatDurationLabel(totalDays)
+	return &totalDays, &label
+}
+
+func formatDurationLabel(totalDays int) string {
+	if totalDays <= 0 {
+		return "0 hari"
+	}
+
+	years := totalDays / 365
+	remainingDays := totalDays % 365
+	months := remainingDays / 30
+	days := remainingDays % 30
+
+	parts := make([]string, 0, 3)
+	if years > 0 {
+		parts = append(parts, fmt.Sprintf("%d tahun", years))
+	}
+	if months > 0 {
+		parts = append(parts, fmt.Sprintf("%d bulan", months))
+	}
+	if days > 0 {
+		parts = append(parts, fmt.Sprintf("%d hari", days))
+	}
+	if len(parts) == 0 {
+		return "0 hari"
+	}
+
+	return strings.Join(parts, " ")
+}
+
+func optionalUserName(user *schema.User) *string {
+	if user == nil || strings.TrimSpace(user.Name) == "" {
+		return nil
+	}
+
+	name := user.Name
+	return &name
+}
+
+func formatStudentStatusUpdatedAtLabel(value *time.Time) *string {
+	if value == nil || value.IsZero() {
+		return nil
+	}
+
+	weekdayNames := map[time.Weekday]string{
+		time.Sunday:    "Minggu",
+		time.Monday:    "Senin",
+		time.Tuesday:   "Selasa",
+		time.Wednesday: "Rabu",
+		time.Thursday:  "Kamis",
+		time.Friday:    "Jumat",
+		time.Saturday:  "Sabtu",
+	}
+	monthNames := map[time.Month]string{
+		time.January:   "Januari",
+		time.February:  "Februari",
+		time.March:     "Maret",
+		time.April:     "April",
+		time.May:       "Mei",
+		time.June:      "Juni",
+		time.July:      "Juli",
+		time.August:    "Agustus",
+		time.September: "September",
+		time.October:   "Oktober",
+		time.November:  "November",
+		time.December:  "Desember",
+	}
+
+	localTime := value.Local()
+	label := fmt.Sprintf(
+		"%s, %02d %s %d %02d:%02d",
+		weekdayNames[localTime.Weekday()],
+		localTime.Day(),
+		monthNames[localTime.Month()],
+		localTime.Year(),
+		localTime.Hour(),
+		localTime.Minute(),
+	)
+	return &label
 }

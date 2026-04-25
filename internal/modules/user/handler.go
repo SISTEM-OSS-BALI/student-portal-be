@@ -2,6 +2,7 @@ package user
 
 import (
 	"net/http"
+	"reflect"
 
 	"github.com/gin-gonic/gin"
 
@@ -16,6 +17,38 @@ func NewHandler(service *Service) *Handler {
 	return &Handler{service: service}
 }
 
+func getAuthUserID(c *gin.Context) *string {
+	value, ok := c.Get("auth")
+	if !ok {
+		return nil
+	}
+
+	rv := reflect.ValueOf(value)
+	if !rv.IsValid() {
+		return nil
+	}
+	if rv.Kind() == reflect.Pointer {
+		if rv.IsNil() {
+			return nil
+		}
+		rv = rv.Elem()
+	}
+	if rv.Kind() != reflect.Struct {
+		return nil
+	}
+
+	field := rv.FieldByName("UserID")
+	if !field.IsValid() || field.Kind() != reflect.String {
+		return nil
+	}
+
+	userID := field.String()
+	if userID == "" {
+		return nil
+	}
+	return &userID
+}
+
 func (h *Handler) Create(c *gin.Context) {
 	var input CreateDTO
 	if err := c.ShouldBindJSON(&input); err != nil {
@@ -28,6 +61,10 @@ func (h *Handler) Create(c *gin.Context) {
 		input.Email,
 		input.Password,
 		input.StageID,
+		input.CurrentStepID,
+		input.VisaStatus,
+		input.StudentStatus,
+		input.NameConsultant,
 		input.NoPhone,
 		input.NameCampus,
 		input.Degree,
@@ -68,17 +105,24 @@ func (h *Handler) Update(c *gin.Context) {
 		return
 	}
 
+	actorID := getAuthUserID(c)
+
 	user, err := h.service.Update(
 		c.Param("id"),
 		input.Name,
 		input.Email,
 		input.StageID,
+		input.CurrentStepID,
+		input.VisaStatus,
+		input.StudentStatus,
+		input.NameConsultant,
 		input.NameCampus,
 		input.NoPhone,
 		input.Degree,
 		input.NameDegree,
 		input.VisaType,
 		input.TranslationQuota,
+		actorID,
 	)
 	if err != nil {
 		httpx.RespondError(c, http.StatusBadRequest, "update_failed", err.Error(), nil)
@@ -113,6 +157,40 @@ func (h *Handler) PatchQuotaTranslation(c *gin.Context) {
 	}
 
 	user, err := h.service.PatchQuotaTranslation(c.Param("id"), input.TranslationQuota)
+	if err != nil {
+		httpx.RespondError(c, http.StatusBadRequest, "update_failed", err.Error(), nil)
+		return
+	}
+
+	c.JSON(http.StatusOK, NewResponseDTO(user))
+}
+
+func (h *Handler) PatchVisaStatus(c *gin.Context) {
+	var input PatchVisaStatusDTO
+	if err := c.ShouldBindJSON(&input); err != nil {
+		httpx.RespondError(c, http.StatusBadRequest, "validation_error", err.Error(), nil)
+		return
+	}
+
+	user, err := h.service.PatchVisaStatus(c.Param("id"), input.VisaStatus)
+	if err != nil {
+		httpx.RespondError(c, http.StatusBadRequest, "update_failed", err.Error(), nil)
+		return
+	}
+
+	c.JSON(http.StatusOK, NewResponseDTO(user))
+}
+
+func (h *Handler) PatchStudentStatus(c *gin.Context) {
+	var input PatchStudentStatusDTO
+	if err := c.ShouldBindJSON(&input); err != nil {
+		httpx.RespondError(c, http.StatusBadRequest, "validation_error", err.Error(), nil)
+		return
+	}
+
+	actorID := getAuthUserID(c)
+
+	user, err := h.service.PatchStudentStatus(c.Param("id"), input.StudentStatus, actorID)
 	if err != nil {
 		httpx.RespondError(c, http.StatusBadRequest, "update_failed", err.Error(), nil)
 		return

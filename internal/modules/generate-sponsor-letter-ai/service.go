@@ -1,4 +1,4 @@
-package generatestatementletterai
+package generatesponsorletterai
 
 import (
 	"bufio"
@@ -25,31 +25,28 @@ var (
 	ErrOllamaTimeout        = errors.New("ollama request timeout")
 )
 
-const defaultChecklistSource = "/assets/file/Kerangka GS 2026.pdf"
-const statementChecklistVersion = "GS 2026"
+const defaultChecklistSource = "/assets/file/Sponsor Letter Checklist.pdf"
+const sponsorChecklistVersion = "Sponsor Letter Checklist"
 
-var gsChecklist2026 = []string{
-	"Applicant identity: name, date of birth, nationality, and application ID.",
-	"Purpose statement: clearly state the main goal to study in Australia and return home after completion.",
-	"Course and institution: mention the chosen course/major and institution.",
-	"Study destination: mention the city and country of study.",
-	"Education background: latest school/university, major, and graduation years.",
-	"Work or business experience: current or previous employment/business and its context.",
-	"Organizational or event involvement, if any, and relevance to the chosen course.",
-	"Home-country ties: family, property, assets, commitments, or relationship context that support return intention.",
-	"Course consistency: explain why the chosen course matches prior education and work background.",
-	"Entry requirements and evidence: academic results, IELTS or other prerequisites if available.",
-	"Availability in home country: explain similar study options locally and why Australia is still chosen.",
-	"Course detail: modules/subjects and skills to be gained, linked to future plan.",
+var sponsorLetterChecklist = []string{
+	"Sponsor identity: full name, nationality, and relationship to the student.",
+	"Clear statement that the sponsor is willing to financially support the student.",
+	"Study destination details: country, institution/campus, and degree or course.",
+	"Funding scope: tuition fee, living expenses, accommodation, travel, or other covered costs.",
+	"Sponsor financial background: occupation, business, employment, or income source.",
+	"Reason the sponsor is supporting the student and confidence in the study plan.",
+	"Confirmation that the support will remain available for the duration of study.",
+	"Any relevant family context or obligation that strengthens the sponsorship commitment.",
+	"Closing statement, date context, and readiness to provide supporting evidence if requested.",
 }
 
-func statementChecklistItems() []string {
-	items := make([]string, len(gsChecklist2026))
-	copy(items, gsChecklist2026)
+func sponsorChecklistItems() []string {
+	items := make([]string, len(sponsorLetterChecklist))
+	copy(items, sponsorLetterChecklist)
 	return items
 }
 
-func statementChecklistSource() string {
+func sponsorChecklistSource() string {
 	return defaultChecklistSource
 }
 
@@ -99,7 +96,7 @@ func NewService() *Service {
 func (s *Service) Generate(ctx context.Context, input GenerateDTO) (GenerateResponseDTO, error) {
 	prompt := strings.TrimSpace(input.Prompt)
 	if prompt == "" {
-		prompt = buildPromptFromStatementPayload(input)
+		prompt = buildPromptFromSponsorPayload(input)
 	}
 	if prompt == "" {
 		return GenerateResponseDTO{}, ErrPromptRequired
@@ -113,11 +110,7 @@ func (s *Service) Generate(ctx context.Context, input GenerateDTO) (GenerateResp
 		return GenerateResponseDTO{}, ErrModelRequired
 	}
 
-	requestBody, err := json.Marshal(ollamaGenerateRequest{
-		Model:  model,
-		Prompt: prompt,
-		Stream: true,
-	})
+	requestBody, err := json.Marshal(ollamaGenerateRequest{Model: model, Prompt: prompt, Stream: true})
 	if err != nil {
 		return GenerateResponseDTO{}, err
 	}
@@ -134,7 +127,7 @@ func (s *Service) Generate(ctx context.Context, input GenerateDTO) (GenerateResp
 		parsed, err := s.generateOnce(reqCtx, baseURL, requestBody, model, len(prompt))
 		if err == nil {
 			responseText := strings.TrimSpace(parsed.Response)
-			fileBase64, generatedFileName, fileErr := generateStatementLetterDocument(reqCtx, input, responseText)
+			fileBase64, generatedFileName, fileErr := generateSponsorLetterDocument(reqCtx, input, responseText)
 			if fileErr != nil {
 				return GenerateResponseDTO{}, fileErr
 			}
@@ -147,9 +140,9 @@ func (s *Service) Generate(ctx context.Context, input GenerateDTO) (GenerateResp
 				FileBase64:        fileBase64,
 				GeneratedFileName: generatedFileName,
 				GeneratedMimeType: generatedWordMimeType,
-				ChecklistVersion:  statementChecklistVersion,
-				ChecklistItems:    statementChecklistItems(),
-				ChecklistSource:   resolveChecklistSource(input),
+				ChecklistVersion:  sponsorChecklistVersion,
+				ChecklistItems:    sponsorChecklistItems(),
+				ChecklistSource:   sponsorChecklistSource(),
 				MissingIndicators: detectMissingIndicators(parsed.Response),
 			}, nil
 		}
@@ -167,37 +160,19 @@ func (s *Service) Generate(ctx context.Context, input GenerateDTO) (GenerateResp
 	return GenerateResponseDTO{}, lastErr
 }
 
-func (s *Service) generateOnce(
-	ctx context.Context,
-	baseURL string,
-	requestBody []byte,
-	model string,
-	promptLen int,
-) (ollamaGenerateResponse, error) {
-	req, err := http.NewRequestWithContext(
-		ctx,
-		http.MethodPost,
-		baseURL+"/api/generate",
-		bytes.NewReader(requestBody),
-	)
+func (s *Service) generateOnce(ctx context.Context, baseURL string, requestBody []byte, model string, promptLen int) (ollamaGenerateResponse, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, baseURL+"/api/generate", bytes.NewReader(requestBody))
 	if err != nil {
 		return ollamaGenerateResponse{}, err
 	}
 	req.Header.Set("Content-Type", "application/json")
 
 	start := time.Now()
-	log.Printf(
-		"[statement-letter.service] ollama request url=%s model=%s prompt_len=%d timeout=%s",
-		baseURL+"/api/generate",
-		model,
-		promptLen,
-		s.timeout,
-	)
+	log.Printf("[sponsor-letter.service] ollama request url=%s model=%s prompt_len=%d timeout=%s", baseURL+"/api/generate", model, promptLen, s.timeout)
 
 	resp, err := s.client.Do(req)
 	if err != nil {
-		log.Printf("[statement-letter.service] request error after=%s err=%v", time.Since(start), err)
-
+		log.Printf("[sponsor-letter.service] request error after=%s err=%v", time.Since(start), err)
 		if errors.Is(err, context.DeadlineExceeded) || isNetTimeout(err) {
 			return ollamaGenerateResponse{}, fmt.Errorf("%w: %v", ErrOllamaTimeout, err)
 		}
@@ -208,55 +183,46 @@ func (s *Service) generateOnce(
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		raw, readErr := readAllOrScanner(resp.Body)
 		if readErr != nil {
-			log.Printf("[statement-letter.service] read error response body after=%s err=%v", time.Since(start), readErr)
+			log.Printf("[sponsor-letter.service] read error response body after=%s err=%v", time.Since(start), readErr)
 		}
-		return ollamaGenerateResponse{}, fmt.Errorf(
-			"%w: status=%d body=%s",
-			ErrOllamaRequestFailed,
-			resp.StatusCode,
-			string(raw),
-		)
+		return ollamaGenerateResponse{}, fmt.Errorf("%w: status=%d body=%s", ErrOllamaRequestFailed, resp.StatusCode, string(raw))
 	}
 
 	parsed, raw, err := readGenerateStream(resp.Body)
 	if err != nil {
-		log.Printf("[statement-letter.service] unmarshal error body=%s err=%v", truncate(string(raw), 2000), err)
+		log.Printf("[sponsor-letter.service] unmarshal error body=%s err=%v", truncate(string(raw), 2000), err)
 		return ollamaGenerateResponse{}, fmt.Errorf("%w: %v", ErrInvalidOllamaPayload, err)
 	}
 
 	return parsed, nil
 }
 
-func buildPromptFromStatementPayload(input GenerateDTO) string {
+func buildPromptFromSponsorPayload(input GenerateDTO) string {
 	var builder strings.Builder
 	destinationCountry := strings.TrimSpace(stringPtrValue(input.StudentCountry))
 	campusName := strings.TrimSpace(stringPtrValue(input.CampusName))
 	degree := strings.TrimSpace(stringPtrValue(input.Degree))
 
 	builder.WriteString("You are a senior admissions writing assistant.\n")
-	builder.WriteString("Write a Genuine Student (GS) / Statement Letter in professional English based strictly on the provided student data.\n")
+	builder.WriteString("Write a Sponsor Letter in professional English based strictly on the provided student and sponsor data.\n")
+	builder.WriteString("The sponsor letter should be written from the sponsor perspective, confirming financial support for the student.\n")
 	builder.WriteString("Do not invent facts. If information is missing, do not fabricate it.\n")
-	builder.WriteString("After the statement letter, add a section titled 'Missing Information' with bullet points for any GS checklist items that are still unsupported by the provided data.\n")
-	builder.WriteString("If explicit student profile metadata is provided for destination country, campus, or degree, use that metadata as the source of truth.\n")
-	builder.WriteString("Use the GS 2026 checklist below as mandatory coverage guidance:\n")
+	builder.WriteString("After the sponsor letter, add a section titled 'Missing Information' with bullet points for unsupported sponsor-letter requirements.\n")
+	builder.WriteString("Use any explicit destination country, campus, or degree metadata as source of truth.\n")
+	builder.WriteString("Use the checklist below as mandatory coverage guidance:\n")
 	builder.WriteString("Checklist source reference: ")
-	builder.WriteString(resolveChecklistSource(input))
+	builder.WriteString(sponsorChecklistSource())
 	builder.WriteString("\n")
-	for idx, item := range gsChecklist2026 {
+	for idx, item := range sponsorLetterChecklist {
 		builder.WriteString(fmt.Sprintf("%d. %s\n", idx+1, item))
 	}
+
 	builder.WriteString("\nRequired output structure:\n")
-	builder.WriteString("- Opening paragraph introducing the applicant and study purpose.\n")
-	builder.WriteString("- Academic and career background in home country.\n")
-	if destinationCountry != "" {
-		builder.WriteString("- Reason for selecting the course, institution, city, and ")
-		builder.WriteString(destinationCountry)
-		builder.WriteString(".\n")
-	} else {
-		builder.WriteString("- Reason for selecting the course, institution, city, and destination country.\n")
-	}
-	builder.WriteString("- Evidence of home-country ties and intention to return.\n")
-	builder.WriteString("- Future study and career plan after graduation.\n")
+	builder.WriteString("- Opening sponsor declaration.\n")
+	builder.WriteString("- Sponsor relationship and financial background.\n")
+	builder.WriteString("- Commitment to cover study and living expenses.\n")
+	builder.WriteString("- Confidence in the student's study plan and future.\n")
+	builder.WriteString("- Closing commitment and readiness to provide evidence.\n")
 	builder.WriteString("- Missing Information section.\n")
 
 	if input.StudentName != nil && strings.TrimSpace(*input.StudentName) != "" {
@@ -332,9 +298,9 @@ func buildPromptFromStatementPayload(input GenerateDTO) string {
 				label = strings.TrimSpace(section.Key)
 			}
 			if label == "" {
-				label = "Section"
+				continue
 			}
-			builder.WriteString("## ")
+			builder.WriteString("\nSection: ")
 			builder.WriteString(label)
 			builder.WriteString("\n")
 			for _, item := range section.Items {
@@ -355,157 +321,174 @@ func buildPromptFromStatementPayload(input GenerateDTO) string {
 	return strings.TrimSpace(builder.String())
 }
 
-func detectMissingIndicators(response string) []string {
-	normalized := strings.ToLower(response)
-	indicators := make([]string, 0)
-	for _, marker := range []string{
-		"missing information",
-		"not provided",
-		"not available",
-		"belum tersedia",
-		"tidak tersedia",
-		"tidak disebutkan",
-	} {
-		if strings.Contains(normalized, marker) {
-			indicators = append(indicators, marker)
+func detectMissingIndicators(content string) []string {
+	lower := strings.ToLower(content)
+	var missing []string
+
+	checks := map[string][]string{
+		"sponsor relationship":    {"relationship", "father", "mother", "guardian", "sponsor"},
+		"financial support scope": {"tuition", "living expenses", "accommodation", "financial support"},
+		"funding source":          {"business", "employment", "income", "financial"},
+		"duration of sponsorship": {"duration", "entire study", "until completion", "throughout"},
+		"supporting evidence":     {"evidence", "bank statement", "supporting document", "if requested"},
+	}
+
+	for label, keywords := range checks {
+		matched := false
+		for _, keyword := range keywords {
+			if strings.Contains(lower, keyword) {
+				matched = true
+				break
+			}
+		}
+		if !matched {
+			missing = append(missing, label)
 		}
 	}
-	return indicators
-}
 
-func resolveChecklistSource(input GenerateDTO) string {
-	if input.ChecklistURL != nil && strings.TrimSpace(*input.ChecklistURL) != "" {
-		return strings.TrimSpace(*input.ChecklistURL)
-	}
-	if input.ChecklistPath != nil && strings.TrimSpace(*input.ChecklistPath) != "" {
-		return strings.TrimSpace(*input.ChecklistPath)
-	}
-	return defaultChecklistSource
-}
-
-func shouldRetryWithNextBase(err error) bool {
-	if errors.Is(err, ErrOllamaTimeout) {
-		return true
-	}
-	if errors.Is(err, ErrOllamaRequestFailed) {
-		message := err.Error()
-		return strings.Contains(message, "status=5")
-	}
-	return false
+	return missing
 }
 
 func resolveBaseURLs() []string {
-	rawList := strings.TrimSpace(os.Getenv("OLLAMA_BASE_URLS"))
-	if rawList == "" {
-		rawList = getEnv("OLLAMA_BASE_URL", "https://llm.onestepsolutionbali.com")
+	primary := strings.TrimSpace(getEnv("OLLAMA_BASE_URL", "http://127.0.0.1:11434"))
+	rawList := strings.TrimSpace(getEnv("OLLAMA_BASE_URLS", ""))
+
+	seen := map[string]struct{}{}
+	var out []string
+	add := func(v string) {
+		v = strings.TrimRight(strings.TrimSpace(v), "/")
+		if v == "" {
+			return
+		}
+		if _, ok := seen[v]; ok {
+			return
+		}
+		seen[v] = struct{}{}
+		out = append(out, v)
 	}
 
-	seen := make(map[string]struct{})
-	baseURLs := make([]string, 0)
-	for _, item := range strings.Split(rawList, ",") {
-		baseURL := strings.TrimRight(strings.TrimSpace(item), "/")
-		if baseURL == "" {
-			continue
+	add(primary)
+	if rawList != "" {
+		for _, item := range strings.Split(rawList, ",") {
+			add(item)
 		}
-		if _, exists := seen[baseURL]; exists {
-			continue
-		}
-		seen[baseURL] = struct{}{}
-		baseURLs = append(baseURLs, baseURL)
 	}
-	if len(baseURLs) == 0 {
-		return []string{"https://llm.onestepsolutionbali.com"}
+
+	if len(out) == 0 {
+		add("http://127.0.0.1:11434")
 	}
-	return baseURLs
+
+	return out
 }
 
-func isNetTimeout(err error) bool {
-	var nerr net.Error
-	return errors.As(err, &nerr) && nerr.Timeout()
+func getEnv(key, fallback string) string {
+	if val, ok := os.LookupEnv(key); ok {
+		return val
+	}
+	return fallback
 }
 
-func readGenerateStream(body io.Reader) (ollamaGenerateResponse, []byte, error) {
-	raw, err := readAllOrScanner(body)
+func getEnvAsInt(key string, fallback int) int {
+	v := strings.TrimSpace(getEnv(key, ""))
+	if v == "" {
+		return fallback
+	}
+	n, err := strconv.Atoi(v)
 	if err != nil {
-		return ollamaGenerateResponse{}, raw, err
+		return fallback
 	}
+	return n
+}
 
-	lines := bytes.Split(raw, []byte("\n"))
-	var aggregated ollamaGenerateResponse
-	var responseBuilder strings.Builder
-	var parsedAny bool
+func readGenerateStream(r io.Reader) (ollamaGenerateResponse, []byte, error) {
+	scanner := bufio.NewScanner(r)
+	buf := make([]byte, 0, 64*1024)
+	scanner.Buffer(buf, 1024*1024)
 
-	for _, line := range lines {
-		line = bytes.TrimSpace(line)
+	var raw bytes.Buffer
+	var final ollamaGenerateResponse
+	var combined strings.Builder
+	seen := false
+
+	for scanner.Scan() {
+		line := bytes.TrimSpace(scanner.Bytes())
 		if len(line) == 0 {
 			continue
 		}
+		raw.Write(line)
+		raw.WriteByte('\n')
 
-		var chunk ollamaGenerateResponse
-		if err := json.Unmarshal(line, &chunk); err != nil {
-			return ollamaGenerateResponse{}, raw, err
+		var part ollamaGenerateResponse
+		if err := json.Unmarshal(line, &part); err != nil {
+			return ollamaGenerateResponse{}, raw.Bytes(), err
 		}
-
-		parsedAny = true
-		if chunk.Model != "" {
-			aggregated.Model = chunk.Model
+		seen = true
+		if part.Model != "" {
+			final.Model = part.Model
 		}
-		if chunk.Response != "" {
-			responseBuilder.WriteString(chunk.Response)
+		if part.Response != "" {
+			combined.WriteString(part.Response)
 		}
-		if chunk.Done {
-			aggregated.Done = true
-		}
-		if chunk.DoneReason != "" {
-			aggregated.DoneReason = chunk.DoneReason
+		if part.Done {
+			final.Done = true
+			final.DoneReason = part.DoneReason
 		}
 	}
-
-	if !parsedAny {
-		return ollamaGenerateResponse{}, raw, errors.New("empty ollama response body")
+	if err := scanner.Err(); err != nil {
+		return ollamaGenerateResponse{}, raw.Bytes(), err
 	}
-
-	aggregated.Response = responseBuilder.String()
-	return aggregated, raw, nil
+	if !seen {
+		all, err := io.ReadAll(r)
+		if err == nil && len(all) > 0 {
+			raw.Write(all)
+		}
+		return ollamaGenerateResponse{}, raw.Bytes(), io.EOF
+	}
+	final.Response = combined.String()
+	return final, raw.Bytes(), nil
 }
 
-func readAllOrScanner(body io.Reader) ([]byte, error) {
+func readAllOrScanner(r io.Reader) ([]byte, error) {
+	b, err := io.ReadAll(r)
+	if err == nil {
+		return b, nil
+	}
 	var raw bytes.Buffer
-	scanner := bufio.NewScanner(body)
-	scanner.Buffer(make([]byte, 0, 64*1024), 4*1024*1024)
+	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
 		raw.Write(scanner.Bytes())
 		raw.WriteByte('\n')
 	}
-	if err := scanner.Err(); err != nil {
-		return raw.Bytes(), err
+	if scanErr := scanner.Err(); scanErr != nil {
+		return raw.Bytes(), scanErr
 	}
-	return bytes.TrimSpace(raw.Bytes()), nil
+	return raw.Bytes(), err
 }
 
-func truncate(s string, max int) string {
-	if len(s) <= max {
-		return s
-	}
-	return s[:max] + "...(truncated)"
+func isNetTimeout(err error) bool {
+	var netErr net.Error
+	return errors.As(err, &netErr) && netErr.Timeout()
 }
 
-func getEnv(key string, fallback string) string {
-	value := strings.TrimSpace(os.Getenv(key))
-	if value == "" {
-		return fallback
+func shouldRetryWithNextBase(err error) bool {
+	if err == nil {
+		return false
 	}
-	return value
+	if errors.Is(err, ErrOllamaTimeout) {
+		return true
+	}
+	msg := strings.ToLower(err.Error())
+	for _, part := range []string{"connection refused", "no such host", "i/o timeout", "bad gateway", "502", "503", "504"} {
+		if strings.Contains(msg, part) {
+			return true
+		}
+	}
+	return false
 }
 
-func getEnvAsInt(key string, fallback int) int {
-	value := strings.TrimSpace(os.Getenv(key))
-	if value == "" {
-		return fallback
+func truncate(value string, max int) string {
+	if len(value) <= max {
+		return value
 	}
-	parsed, err := strconv.Atoi(value)
-	if err != nil || parsed <= 0 {
-		return fallback
-	}
-	return parsed
+	return value[:max] + "..."
 }

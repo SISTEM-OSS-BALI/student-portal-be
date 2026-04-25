@@ -1,6 +1,8 @@
 package user
 
 import (
+	"time"
+
 	"github.com/username/gin-gorm-api/internal/schema"
 	"gorm.io/gorm"
 )
@@ -14,6 +16,8 @@ type Repository interface {
 	Update(user *schema.User) error
 	Delete(id string) error
 	PatchQuotaTranslation(id string, quota int) (schema.User, error)
+	PatchVisaStatus(id string, visaStatus *string, visaGrantedAt *time.Time) (schema.User, error)
+	PatchStudentStatus(id string, studentStatus schema.StatusStudent, updatedByID *string, updatedAt *time.Time) (schema.User, error)
 }
 
 type GormRepository struct {
@@ -30,7 +34,7 @@ func (r *GormRepository) Create(user *schema.User) error {
 
 func (r *GormRepository) List() ([]schema.User, error) {
 	var users []schema.User
-	if err := r.db.Preload("Stage").Preload("Stage.Country").Preload("Stage.Document").Preload("NotesStudent").
+	if err := r.db.Preload("Stage").Preload("Stage.Country").Preload("Stage.Document").Preload("NotesStudent").Preload("StudentStatusUpdatedBy").
 		Preload("Stage.Country.CountrySteps.Step").
 		Preload("Stage.Country.CountrySteps.Step.Children").
 		Order("id desc").Find(&users).Error; err != nil {
@@ -41,7 +45,7 @@ func (r *GormRepository) List() ([]schema.User, error) {
 
 func (r *GormRepository) GetByID(id string) (schema.User, error) {
 	var user schema.User
-	if err := r.db.Preload("Stage").Preload("Stage.Country").Preload("Stage.Document").Preload("NotesStudent").
+	if err := r.db.Preload("Stage").Preload("Stage.Country").Preload("Stage.Document").Preload("NotesStudent").Preload("StudentStatusUpdatedBy").
 		Preload("Stage.Country.CountrySteps.Step").
 		Preload("Stage.Country.CountrySteps.Step.Children").
 		Where("id = ?", id).First(&user).Error; err != nil {
@@ -68,7 +72,7 @@ func (r *GormRepository) Delete(id string) error {
 
 func (r *GormRepository) ListStudents() ([]schema.User, error) {
 	var users []schema.User
-	if err := r.db.Preload("Stage").Preload("Stage.Country").Preload("Stage.Document").Preload("NotesStudent").
+	if err := r.db.Preload("Stage").Preload("Stage.Country").Preload("Stage.Document").Preload("NotesStudent").Preload("StudentStatusUpdatedBy").
 		Preload("Stage.Country.CountrySteps.Step").
 		Preload("Stage.Country.CountrySteps.Step.Children").
 		Where("role = ?", schema.UserRoleStudent).Order("id desc").Find(&users).Error; err != nil {
@@ -86,4 +90,30 @@ func (r *GormRepository) PatchQuotaTranslation(id string, quota int) (schema.Use
 	}
 	return r.GetByID(id)
 }
- 
+
+func (r *GormRepository) PatchVisaStatus(id string, visaStatus *string, visaGrantedAt *time.Time) (schema.User, error) {
+	if err := r.db.Model(&schema.User{}).
+		Where("id = ?", id).
+		Updates(map[string]interface{}{
+			"visa_status":     visaStatus,
+			"visa_granted_at": visaGrantedAt,
+		}).
+		Error; err != nil {
+		return schema.User{}, err
+	}
+	return r.GetByID(id)
+}
+
+func (r *GormRepository) PatchStudentStatus(id string, studentStatus schema.StatusStudent, updatedByID *string, updatedAt *time.Time) (schema.User, error) {
+	if err := r.db.Model(&schema.User{}).
+		Where("id = ?", id).
+		Updates(map[string]interface{}{
+			"student_status":               studentStatus,
+			"student_status_updated_by_id": updatedByID,
+			"student_status_updated_at":    updatedAt,
+		}).
+		Error; err != nil {
+		return schema.User{}, err
+	}
+	return r.GetByID(id)
+}

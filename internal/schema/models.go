@@ -25,10 +25,16 @@ func AllModels() []interface{} {
 		&AnswerDocument{},
 		&GeneratedCVAIDocument{},
 		&GeneratedStatementLetterAIDocument{},
+		&StatementLetterAIApproval{},
+		&StatementLetterAIApprovalLog{},
+		&GeneratedSponsorLetterAIDocument{},
+		&SponsorLetterAIApproval{},
+		&SponsorLetterAIApprovalLog{},
 		&AnswerApproval{},
 		&AnswerDocumentApproval{},
 		&DocumentTranslation{},
 		&QuestionBase{},
 		&TicketMessage{},
+		&InformationCountryManagement{},
 	}
 }

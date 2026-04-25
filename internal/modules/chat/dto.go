@@ -40,6 +40,8 @@ type MessageResponseDTO struct {
 	ID             string                 `json:"id"`
 	ConversationID string                 `json:"conversation_id"`
 	SenderID       string                 `json:"sender_id"`
+	SenderName     string                 `json:"sender_name,omitempty"`
+	SenderRole     string                 `json:"sender_role,omitempty"`
 	Type           string                 `json:"type"`
 	Text           *string                `json:"text"`
 	ReplyToID      *string                `json:"reply_to_id"`
@@ -122,6 +124,18 @@ func NewMessageResponseDTO(message schema.ChatMessage) MessageResponseDTO {
 		ID:             message.ID,
 		ConversationID: message.ConversationID,
 		SenderID:       message.SenderID,
+		SenderName: func() string {
+			if message.Sender == nil {
+				return ""
+			}
+			return message.Sender.Name
+		}(),
+		SenderRole: func() string {
+			if message.Sender == nil {
+				return ""
+			}
+			return string(message.Sender.Role)
+		}(),
 		Type:           message.Type,
 		Text:           message.Text,
 		ReplyToID:      message.ReplyToID,
