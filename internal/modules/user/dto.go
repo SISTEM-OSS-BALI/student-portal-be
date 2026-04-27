@@ -22,6 +22,10 @@ type CreateDTO struct {
 	NameCampus       *string `json:"name_campus"`
 	Degree           *string `json:"degree"`
 	NameDegree       *string `json:"name_degree"`
+	DocumentConsentSignatureURL *string `json:"document_consent_signature_url"`
+	DocumentConsentProofPhotoURL *string `json:"document_consent_proof_photo_url"`
+	DocumentConsentSignedAt *time.Time `json:"document_consent_signed_at"`
+	DocumentConsentSigned *bool `json:"document_consent_signed"`
 	VisaType         *string `json:"visa_type"`
 	TranslationQuota int     `json:"translation_quota"`
 }
@@ -39,6 +43,10 @@ type UpdateDTO struct {
 	NameCampus       *string `json:"name_campus"`
 	NameDegree       *string `json:"name_degree"`
 	Degree           *string `json:"degree"`
+	DocumentConsentSignatureURL *string `json:"document_consent_signature_url"`
+	DocumentConsentProofPhotoURL *string `json:"document_consent_proof_photo_url"`
+	DocumentConsentSignedAt *time.Time `json:"document_consent_signed_at"`
+	DocumentConsentSigned *bool `json:"document_consent_signed"`
 	VisaType         *string `json:"visa_type"`
 	TranslationQuota *int    `json:"translation_quota"`
 }
@@ -53,6 +61,13 @@ type PatchVisaStatusDTO struct {
 
 type PatchStudentStatusDTO struct {
 	StudentStatus *string `json:"student_status" binding:"required"`
+}
+
+type PatchDocumentConsentDTO struct {
+	DocumentConsentSignatureURL  *string    `json:"document_consent_signature_url"`
+	DocumentConsentProofPhotoURL *string    `json:"document_consent_proof_photo_url"`
+	DocumentConsentSignedAt      *time.Time `json:"document_consent_signed_at"`
+	DocumentConsentSigned        *bool      `json:"document_consent_signed"`
 }
 
 type ResponseDTO struct {
@@ -78,6 +93,10 @@ type ResponseDTO struct {
 	VisaType               *string          `json:"visa_type,omitempty"`
 	Degree                 *string          `json:"degree,omitempty"`
 	NameDegree             *string          `json:"name_degree,omitempty"`
+	DocumentConsentSignatureURL *string `json:"document_consent_signature_url"`
+	DocumentConsentProofPhotoURL *string `json:"document_consent_proof_photo_url"`
+	DocumentConsentSignedAt *time.Time `json:"document_consent_signed_at"`
+	DocumentConsentSigned *bool `json:"document_consent_signed"`
 	TranslationQuota       int              `json:"translation_quota"`
 	NotesStudent           []NoteStudentDTO `json:"notes,omitempty"`
 	JoinedAt               time.Time        `json:"joined_at"`
@@ -137,39 +156,50 @@ type ChildDTO struct {
 	Label string `json:"label"`
 }
 
+
+
+func boolPtr(v bool) *bool {
+	return &v
+}
+
 func NewResponseDTO(user schema.User) ResponseDTO {
 	visaGrantDurationDays, visaGrantDurationLabel := buildVisaGrantDuration(user.CreatedAt, user.VisaGrantedAt)
 	studentStatusUpdatedByName := optionalUserName(user.StudentStatusUpdatedBy)
 	studentStatusUpdatedAtLabel := formatStudentStatusUpdatedAtLabel(user.StudentStatusUpdatedAt)
+	documentConsentSigned := boolPtr(user.DocumentConsentSigned)
 
 	return ResponseDTO{
-		ID:                     user.ID,
-		Name:                   user.Name,
-		Email:                  user.Email,
-		Role:                   string(user.Role),
-		NoPhone:                user.NoPhone,
-		StageID:                user.StageID,
-		CurrentStepID:          user.CurrentStepID,
-		VisaStatus:             user.VisaStatus,
-		VisaGrantedAt:          user.VisaGrantedAt,
-		VisaGrantDurationDays:  visaGrantDurationDays,
-		VisaGrantDurationLabel: visaGrantDurationLabel,
-		StudentStatus:          string(user.StudentStatus),
-		StudentStatusUpdatedByID:    user.StudentStatusUpdatedByID,
-		StudentStatusUpdatedByName:  studentStatusUpdatedByName,
-		StudentStatusUpdatedAt:      user.StudentStatusUpdatedAt,
-		StudentStatusUpdatedAtLabel: studentStatusUpdatedAtLabel,
-		NameConsultant:         user.NameConsultant,
-		NameCampus:             user.NameCampus,
-		Degree:                 user.Degree,
-		NameDegree:             user.NameDegree,
-		VisaType:               user.VisaType,
-		JoinedAt:               user.CreatedAt,
-		CreatedAt:              user.CreatedAt,
-		UpdatedAt:              user.UpdatedAt,
-		Stage:                  newStageDTO(user.Stage),
-		NotesStudent:           newNoteStudentListDTO(user.NotesStudent),
-		TranslationQuota:       user.TranslationQuota,
+		ID:                            user.ID,
+		Name:                          user.Name,
+		Email:                         user.Email,
+		Role:                          string(user.Role),
+		NoPhone:                       user.NoPhone,
+		StageID:                       user.StageID,
+		CurrentStepID:                 user.CurrentStepID,
+		VisaStatus:                    user.VisaStatus,
+		VisaGrantedAt:                 user.VisaGrantedAt,
+		VisaGrantDurationDays:         visaGrantDurationDays,
+		VisaGrantDurationLabel:        visaGrantDurationLabel,
+		StudentStatus:                 string(user.StudentStatus),
+		StudentStatusUpdatedByID:      user.StudentStatusUpdatedByID,
+		StudentStatusUpdatedByName:    studentStatusUpdatedByName,
+		StudentStatusUpdatedAt:        user.StudentStatusUpdatedAt,
+		StudentStatusUpdatedAtLabel:   studentStatusUpdatedAtLabel,
+		NameConsultant:                user.NameConsultant,
+		NameCampus:                    user.NameCampus,
+		Degree:                        user.Degree,
+		NameDegree:                    user.NameDegree,
+		DocumentConsentSignatureURL:   user.DocumentConsentSignatureURL,
+		DocumentConsentProofPhotoURL:  user.DocumentConsentProofPhotoURL,
+		DocumentConsentSignedAt:       user.DocumentConsentSignedAt,
+		DocumentConsentSigned:         documentConsentSigned,
+		VisaType:                      user.VisaType,
+		JoinedAt:                      user.CreatedAt,
+		CreatedAt:                     user.CreatedAt,
+		UpdatedAt:                     user.UpdatedAt,
+		Stage:                         newStageDTO(user.Stage),
+		NotesStudent:                  newNoteStudentListDTO(user.NotesStudent),
+		TranslationQuota:              user.TranslationQuota,
 	}
 }
 

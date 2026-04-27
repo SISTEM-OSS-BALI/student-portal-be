@@ -198,3 +198,21 @@ func (h *Handler) PatchStudentStatus(c *gin.Context) {
 
 	c.JSON(http.StatusOK, NewResponseDTO(user))
 }
+
+func (h *Handler) PatchDocumentConsent(c *gin.Context) {
+	var input PatchDocumentConsentDTO
+
+	if err := c.ShouldBindJSON(&input); err != nil {
+		httpx.RespondError(c, http.StatusBadRequest, "validation_error", err.Error(), nil)
+		return
+	}
+
+	user, err := h.service.PatchDocumentConsent(c.Param("id"), input)
+	if err != nil {
+		httpx.RespondError(c, http.StatusBadRequest, "update_failed", err.Error(), nil)
+		return
+	}
+
+	c.JSON(http.StatusOK, NewResponseDTO(user))
+}
+

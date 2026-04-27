@@ -216,3 +216,7 @@ func (s *Service) PatchStudentStatus(id string, studentStatus *string, actorID *
 	updatedByID, updatedAt := buildStudentStatusAudit(actorID)
 	return s.repo.PatchStudentStatus(id, nextStatus, updatedByID, updatedAt)
 }
+
+func (s *Service) PatchDocumentConsent(id string, payload PatchDocumentConsentDTO) (schema.User, error) {
+	return s.repo.PatchDocumentConsent(id, payload)
+}

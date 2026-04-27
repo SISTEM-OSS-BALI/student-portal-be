@@ -18,6 +18,7 @@ type Repository interface {
 	PatchQuotaTranslation(id string, quota int) (schema.User, error)
 	PatchVisaStatus(id string, visaStatus *string, visaGrantedAt *time.Time) (schema.User, error)
 	PatchStudentStatus(id string, studentStatus schema.StatusStudent, updatedByID *string, updatedAt *time.Time) (schema.User, error)
+	PatchDocumentConsent(id string, payload PatchDocumentConsentDTO) (schema.User, error)
 }
 
 type GormRepository struct {
@@ -115,5 +116,38 @@ func (r *GormRepository) PatchStudentStatus(id string, studentStatus schema.Stat
 		Error; err != nil {
 		return schema.User{}, err
 	}
+	return r.GetByID(id)
+}
+
+func (r *GormRepository) PatchDocumentConsent(id string, payload PatchDocumentConsentDTO) (schema.User, error) {
+	updates := map[string]interface{}{}
+
+	if payload.DocumentConsentSignatureURL != nil {
+		updates["document_consent_signature_url"] = *payload.DocumentConsentSignatureURL
+	}
+
+	if payload.DocumentConsentProofPhotoURL != nil {
+		updates["document_consent_proof_photo_url"] = *payload.DocumentConsentProofPhotoURL
+	}
+
+	if payload.DocumentConsentSignedAt != nil {
+		updates["document_consent_signed_at"] = *payload.DocumentConsentSignedAt
+	}
+
+	if payload.DocumentConsentSigned != nil {
+		updates["document_consent_signed"] = *payload.DocumentConsentSigned
+	}
+
+	if len(updates) == 0 {
+		return r.GetByID(id)
+	}
+
+	if err := r.db.Model(&schema.User{}).
+		Where("id = ?", id).
+		Updates(updates).
+		Error; err != nil {
+		return schema.User{}, err
+	}
+
 	return r.GetByID(id)
 }

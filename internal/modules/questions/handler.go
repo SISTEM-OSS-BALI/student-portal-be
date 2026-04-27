@@ -333,7 +333,7 @@ func (h *Handler) ListAnswerQuestions(c *gin.Context) {
 	if value := c.Query("question_id"); value != "" {
 		filter.QuestionID = &value
 	}
-	if value := c.Query("user_id"); value != "" {
+	if value := c.Query("student_id"); value != "" {
 		filter.UserID = &value
 	}
 

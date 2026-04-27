@@ -225,7 +225,7 @@ func (r *GormRepository) ListAnswerQuestions(filter AnswerQuestionFilter) ([]sch
 		query = query.Where("question_id = ?", *filter.QuestionID)
 	}
 	if filter.UserID != nil && strings.TrimSpace(*filter.UserID) != "" {
-		query = query.Where("user_id = ?", *filter.UserID)
+		query = query.Where("student_id = ?", *filter.UserID)
 	}
 	if err := query.Order("created_at desc").Find(&answers).Error; err != nil {
 		return nil, err

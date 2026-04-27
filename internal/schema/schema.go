@@ -94,6 +94,10 @@ type User struct {
 	NameCampus                 *string                             `json:"name_campus" gorm:"size:100"`
 	Degree                     *string                             `json:"degree" gorm:"size:100"`
 	NameDegree                 *string                             `json:"name_degree" gorm:"size:100"`
+	DocumentConsentSignatureURL *string `json:"document_consent_signature_url,omitempty" gorm:"size:500"`
+	DocumentConsentProofPhotoURL *string `json:"document_consent_proof_photo_url,omitempty" gorm:"size:500"`
+	DocumentConsentSignedAt     *time.Time `json:"document_consent_signed_at,omitempty" gorm:"index"`
+	DocumentConsentSigned       bool `json:"document_consent_signed" gorm:"not null;default:false"`
 	VisaType                   *string                             `json:"visa_type" gorm:"size:50"`
 	TranslationQuota           int                                 `json:"translation_quota" gorm:"not null;default:0"`
 	NotesStudent               []NoteStudent                       `json:"notes,omitempty" gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`

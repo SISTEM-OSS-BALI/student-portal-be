@@ -26,4 +26,5 @@ func RegisterProtectedRoutes(rg *gin.RouterGroup, db *gorm.DB) {
 	rg.PATCH("/users/:id/visa-status", handler.PatchVisaStatus)
 	rg.PATCH("/users/:id/student-status", handler.PatchStudentStatus)
 	rg.DELETE("/users/:id", handler.Delete)
+	rg.PATCH("/users/:id/document-consent", handler.PatchDocumentConsent)
 }
