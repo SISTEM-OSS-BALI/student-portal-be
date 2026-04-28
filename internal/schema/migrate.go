@@ -533,6 +533,52 @@ func Migrate(db *gorm.DB) error {
 				return nil
 			},
 		},
+		{
+			ID: "20260429120000_country_managements_fix_name_column",
+			Migrate: func(tx *gorm.DB) error {
+				migrator := tx.Migrator()
+				if !migrator.HasTable(&CountryManagement{}) {
+					return nil
+				}
+
+				hasOldName := migrator.HasColumn(&CountryManagement{}, "name")
+				hasNewName := migrator.HasColumn(&CountryManagement{}, "name_country")
+
+				// Ensure the new column exists (current schema uses name_country).
+				if !hasNewName {
+					if err := migrator.AddColumn(&CountryManagement{}, "NameCountry"); err != nil {
+						return err
+					}
+					hasNewName = migrator.HasColumn(&CountryManagement{}, "name_country")
+				}
+
+				if hasOldName && hasNewName {
+					table, err := tableName(tx, &CountryManagement{})
+					if err != nil {
+						return err
+					}
+
+					if err := tx.Exec(fmt.Sprintf(`
+						UPDATE %s
+						SET name_country = name
+						WHERE (name_country IS NULL OR TRIM(name_country) = '')
+						  AND name IS NOT NULL
+						  AND TRIM(name) <> ''
+					`, table)).Error; err != nil {
+						return err
+					}
+
+					if err := migrator.DropColumn(&CountryManagement{}, "name"); err != nil {
+						return err
+					}
+				}
+
+				return tx.AutoMigrate(&CountryManagement{})
+			},
+			Rollback: func(tx *gorm.DB) error {
+				return nil
+			},
+		},
 	})
 
 	if err := m.Migrate(); err != nil {
