@@ -148,13 +148,15 @@ type ChildStepsManagement struct {
 }
 
 type CountryManagement struct {
+
 	ID           string                         `json:"id" gorm:"primaryKey;size:25"`
-	NameCountry  string                         `json:"name" gorm:"column:name_country;size:120;not null"`
+	NameCountry  string                         `json:"name" gorm:"column:name;size:120;not null"`
 	Stages       []StageManagement              `json:"stages,omitempty" gorm:"foreignKey:CountryID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 	CountrySteps []CountryStepsManagement       `json:"country_steps,omitempty" gorm:"foreignKey:CountryID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 	Informations []InformationCountryManagement `json:"informations,omitempty" gorm:"foreignKey:CountryID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 	CreatedAt    time.Time                      `json:"created_at"`
 	UpdatedAt    time.Time                      `json:"updated_at"`
+
 }
 
 type StageManagement struct {
