@@ -55,14 +55,16 @@ func NewResponseDTO(data schema.InformationCountryManagement) ResponseDTO {
 
 func NewResponseListDTO(items []schema.InformationCountryManagement) []ResponseDTO {
 	out := make([]ResponseDTO, 0, len(items))
+
 	for _, item := range items {
 		out = append(out, NewResponseDTO(item))
 	}
+
 	return out
 }
 
-func newCountryDTO(country schema.CountryManagement) *CountryDTO {
-	if country.ID == "" {
+func newCountryDTO(country *schema.CountryManagement) *CountryDTO {
+	if country == nil || country.ID == "" {
 		return nil
 	}
 
