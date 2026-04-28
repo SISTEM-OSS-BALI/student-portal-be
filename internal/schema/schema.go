@@ -220,7 +220,7 @@ type QuestionOption struct {
 	ID         string                 `json:"id" gorm:"primaryKey;size:25"`
 	QuestionID string                 `json:"question_id" gorm:"size:25;not null;index;uniqueIndex:uniq_question_option;index:idx_question_option_order"`
 	Label      string                 `json:"label" gorm:"not null"`
-	Value      string                 `json:"value" gorm:"not null;uniqueIndex:uniq_question_option"`
+	Value      string    			  `gorm:"type:varchar(255);not null;uniqueIndex:uniq_question_option,priority:2" json:"value"`
 	Order      int                    `json:"order" gorm:"not null;default:0;index:idx_question_option_order"`
 	Question   *Question              `json:"question,omitempty" gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 	SelectedBy []AnswerSelectedOption `json:"selected_by,omitempty" gorm:"foreignKey:OptionID;constraint:OnUpdate:CASCADE,OnDelete:RESTRICT;"`
