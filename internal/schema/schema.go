@@ -12,7 +12,6 @@ type StatementLetterApprovalStatus string
 type SponsorLetterDocumentStatus string
 type SponsorLetterApprovalStatus string
 type GeneratedDocumentSource string
-
 const (
 	UserRoleStudent   UserRole = "STUDENT"
 	UserRoleDirector  UserRole = "DIRECTOR"
@@ -125,7 +124,7 @@ type DocumentsManagement struct {
 	Required          bool              `json:"required" gorm:"not null"`
 	AutoRenamePattern AutoRenamePattern `json:"auto_rename_pattern" gorm:"size:191"`
 	Notes             string            `json:"notes" gorm:"type:text"`
-	Stages            []StageManagement `json:"stages,omitempty" gorm:"foreignKey:DocumentID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	Stages            []StageManagement `json:"stages,omitempty" gorm:"foreignKey:DocumentID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:RESTRICT;"`
 	CreatedAt         time.Time         `json:"created_at"`
 	UpdatedAt         time.Time         `json:"updated_at"`
 }
@@ -134,7 +133,7 @@ type StepsManagement struct {
 	ID           string                   `json:"id" gorm:"primaryKey;size:25"`
 	Label        string                   `json:"label" gorm:"size:120;not null"`
 	Children     []ChildStepsManagement   `json:"children,omitempty" gorm:"many2many:steps_children;"`
-	CountrySteps []CountryStepsManagement `json:"country_steps,omitempty" gorm:"foreignKey:StepID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	CountrySteps []CountryStepsManagement `json:"country_steps,omitempty" gorm:"foreignKey:StepID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:RESTRICT;"`
 	CreatedAt    time.Time                `json:"created_at"`
 	UpdatedAt    time.Time                `json:"updated_at"`
 }
@@ -151,9 +150,9 @@ type CountryManagement struct {
 
 	ID           string                         `json:"id" gorm:"primaryKey;size:25"`
 	NameCountry  string                         `json:"name" gorm:"column:name_country;size:120;not null"`
-	Stages       []StageManagement              `json:"stages,omitempty" gorm:"foreignKey:CountryID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
-	CountrySteps []CountryStepsManagement       `json:"country_steps,omitempty" gorm:"foreignKey:CountryID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
-	Informations []InformationCountryManagement `json:"informations,omitempty" gorm:"foreignKey:CountryID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	Stages       []StageManagement              `json:"stages,omitempty" gorm:"foreignKey:CountryID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:RESTRICT;"`
+	CountrySteps []CountryStepsManagement       `json:"country_steps,omitempty" gorm:"foreignKey:CountryID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:RESTRICT;"`
+	Informations []InformationCountryManagement `json:"informations,omitempty" gorm:"foreignKey:CountryID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:RESTRICT;"`
 	CreatedAt    time.Time                      `json:"created_at"`
 	UpdatedAt    time.Time                      `json:"updated_at"`
 
@@ -163,8 +162,8 @@ type StageManagement struct {
 	ID         string               `json:"id" gorm:"primaryKey;size:25"`
 	CountryID  string               `json:"country_id" gorm:"size:25;not null;index"`
 	DocumentID string               `json:"document_id" gorm:"size:25;not null;index"`
-	Country    *CountryManagement   `json:"country,omitempty" gorm:"foreignKey:CountryID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
-	Document   *DocumentsManagement `json:"document,omitempty" gorm:"foreignKey:DocumentID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	Country    *CountryManagement   `json:"country,omitempty" gorm:"foreignKey:CountryID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:RESTRICT;"`
+	Document   *DocumentsManagement `json:"document,omitempty" gorm:"foreignKey:DocumentID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:RESTRICT;"`
 	Users      []User               `json:"users,omitempty" gorm:"foreignKey:StageID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
 	CreatedAt  time.Time            `json:"created_at"`
 	UpdatedAt  time.Time            `json:"updated_at"`
@@ -174,8 +173,8 @@ type CountryStepsManagement struct {
 	ID        string             `json:"id" gorm:"primaryKey;size:25"`
 	CountryID string             `json:"country_id" gorm:"size:25;not null;index"`
 	StepID    string             `json:"step_id" gorm:"size:25;not null;index"`
-	Country   *CountryManagement `json:"country,omitempty" gorm:"foreignKey:CountryID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
-	Step      *StepsManagement   `json:"step,omitempty" gorm:"foreignKey:StepID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	Country   *CountryManagement `json:"country,omitempty" gorm:"foreignKey:CountryID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:RESTRICT;"`
+	Step      *StepsManagement   `json:"step,omitempty" gorm:"foreignKey:StepID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:RESTRICT;"`
 	CreatedAt time.Time          `json:"created_at"`
 	UpdatedAt time.Time          `json:"updated_at"`
 }
@@ -258,7 +257,7 @@ type ChatMessage struct {
 	ReplyToID      *string    `json:"reply_to_id,omitempty" gorm:"size:25;index"`
 	ContextUserID  *string    `json:"context_user_id,omitempty" gorm:"size:25;index"`
 	ContextType    string     `json:"context_type,omitempty" gorm:"size:32"`
-	Sender         *User      `json:"sender,omitempty" gorm:"foreignKey:SenderID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:RESTRICT;"`
+	Sender         *User      `json:"sender,omitempty" gorm:"foreignKey:SenderID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 	Attachments    []ChatMessageAttachment `json:"attachments,omitempty" gorm:"foreignKey:MessageID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 	Statuses       []ChatMessageStatus     `json:"statuses,omitempty" gorm:"foreignKey:MessageID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 	Mentions       []ChatMessageMention    `json:"mentions,omitempty" gorm:"foreignKey:MessageID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
@@ -563,7 +562,7 @@ type DocumentTranslation struct {
 	AnswerDocumentID *string              `json:"answer_document_id,omitempty" gorm:"size:25;index"`
 	AnswerDocument   *AnswerDocument      `json:"answer_document,omitempty" gorm:"foreignKey:AnswerDocumentID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
 	UploaderID       string               `json:"uploader_id" gorm:"size:25;not null;index"`
-	Uploader         *User                `json:"uploader,omitempty" gorm:"foreignKey:UploaderID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:RESTRICT;"`
+	Uploader         *User                `json:"uploader,omitempty" gorm:"foreignKey:UploaderID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 	FileURL          string               `json:"file_url" gorm:"type:text;not null"`
 	FilePath         *string              `json:"file_path,omitempty" gorm:"type:text"`
 	FileName         *string              `json:"file_name,omitempty" gorm:"size:191"`
@@ -580,7 +579,7 @@ type TicketMessage struct {
 	UserID         string            `json:"user_id" gorm:"size:25;not null;index"`
 	ConversationID *string           `json:"conversation_id,omitempty" gorm:"size:25;index"`
 	Status         string            `json:"status" gorm:"size:20;not null;default:'open'"`
-	User           *User             `json:"user,omitempty" gorm:"foreignKey:UserID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:RESTRICT;"`
+	User           *User             `json:"user,omitempty" gorm:"foreignKey:UserID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 	Conversation   *ChatConversation `json:"conversation,omitempty" gorm:"foreignKey:ConversationID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 	CreatedAt      time.Time         `json:"created_at"`
 	UpdatedAt      time.Time         `json:"updated_at"`
@@ -593,7 +592,7 @@ type InformationCountryManagement struct {
 	Description *string            `json:"description,omitempty" gorm:"type:text"`
 	Priority    string             `json:"priority" gorm:"size:30;not null;default:'normal'"`
 	CountryID   string             `json:"country_id" gorm:"size:25;not null;index"`
-	Country     *CountryManagement `json:"country,omitempty" gorm:"foreignKey:CountryID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	Country     *CountryManagement `json:"country,omitempty" gorm:"foreignKey:CountryID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:RESTRICT;"`
 	CreatedAt   time.Time          `json:"created_at"`
 	UpdatedAt   time.Time          `json:"updated_at"`
 }

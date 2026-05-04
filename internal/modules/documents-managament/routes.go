@@ -22,4 +22,5 @@ func RegisterRoutes(rg *gin.RouterGroup, db *gorm.DB) {
 	protected.DELETE("/documents/:id", handler.Delete)
 	protected.GET("/documents/translations-required", handler.DocumentTranslationRequired)
 	protected.POST("/documents/page-count", handler.CountPDFPages)
+	protected.POST("/documents/merge-pdf", handler.MergePDF)
 }

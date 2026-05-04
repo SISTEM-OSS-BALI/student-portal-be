@@ -1,7 +1,9 @@
 package documents
 
 import (
+	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 
@@ -103,3 +105,30 @@ func (h *Handler) CountPDFPages(c *gin.Context) {
 	})
 }
 
+func (h *Handler) MergePDF(c *gin.Context) {
+	var input MergePDFRequestDTO
+	if err := c.ShouldBindJSON(&input); err != nil {
+		httpx.RespondError(c, http.StatusBadRequest, "validation_error", err.Error(), nil)
+		return
+	}
+
+	merged, err := utils.MergePDFsFromURLs([]string{input.OriginalURL, input.TranslationURL}, &utils.PDFMergeOptions{
+		AddDividerPage: input.AddDividerPage,
+	})
+	if err != nil {
+		httpx.RespondError(c, http.StatusBadRequest, "merge_failed", err.Error(), nil)
+		return
+	}
+
+	fileName := strings.TrimSpace(input.FileName)
+	if fileName == "" {
+		fileName = "merged.pdf"
+	}
+	if !strings.HasSuffix(strings.ToLower(fileName), ".pdf") {
+		fileName = fmt.Sprintf("%s.pdf", fileName)
+	}
+
+	c.Header("Content-Type", "application/pdf")
+	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%q", fileName))
+	c.Data(http.StatusOK, "application/pdf", merged)
+}

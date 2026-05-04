@@ -67,3 +67,9 @@ type CountPDFPagesResponseDTO struct {
 	PageCount int    `json:"page_count"`
 }
 
+type MergePDFRequestDTO struct {
+	OriginalURL    string `json:"original_url" binding:"required,url"`
+	TranslationURL string `json:"translation_url" binding:"required,url"`
+	FileName       string `json:"file_name"`
+	AddDividerPage bool   `json:"add_divider_page"`
+}
