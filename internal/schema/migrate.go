@@ -8,12 +8,64 @@ import (
 	"gorm.io/gorm"
 )
 
+type foreignKeyRef struct {
+	ConstraintName string `gorm:"column:CONSTRAINT_NAME"`
+}
+
 func tableName(tx *gorm.DB, model interface{}) (string, error) {
 	stmt := &gorm.Statement{DB: tx}
 	if err := stmt.Parse(model); err != nil {
 		return "", err
 	}
 	return stmt.Schema.Table, nil
+}
+
+func replaceFK(tx *gorm.DB, table, column, refTable, refColumn, constraintName, onDeleteAction string) error {
+	if tx.Dialector.Name() != "mysql" {
+		// This migration targets MySQL only.
+		return nil
+	}
+
+	var existing []foreignKeyRef
+	if err := tx.Raw(`
+		SELECT CONSTRAINT_NAME
+		FROM information_schema.KEY_COLUMN_USAGE
+		WHERE TABLE_SCHEMA = DATABASE()
+		  AND TABLE_NAME = ?
+		  AND COLUMN_NAME = ?
+		  AND REFERENCED_TABLE_NAME = ?
+		  AND REFERENCED_COLUMN_NAME = ?
+		  AND CONSTRAINT_NAME IS NOT NULL
+	`, table, column, refTable, refColumn).Scan(&existing).Error; err != nil {
+		return err
+	}
+
+	for _, fk := range existing {
+		if fk.ConstraintName == "" {
+			continue
+		}
+		if err := tx.Exec(fmt.Sprintf(
+			"ALTER TABLE `%s` DROP FOREIGN KEY `%s`",
+			table, fk.ConstraintName,
+		)).Error; err != nil {
+			return err
+		}
+	}
+
+	return tx.Exec(fmt.Sprintf(`
+		ALTER TABLE %s
+		ADD CONSTRAINT %s
+		FOREIGN KEY (%s) REFERENCES %s (%s)
+		ON DELETE %s
+		ON UPDATE CASCADE
+	`,
+		tx.Statement.Quote(table),
+		tx.Statement.Quote(constraintName),
+		tx.Statement.Quote(column),
+		tx.Statement.Quote(refTable),
+		tx.Statement.Quote(refColumn),
+		onDeleteAction,
+	)).Error
 }
 
 // Migrate applies versioned migrations in order.
@@ -576,6 +628,69 @@ func Migrate(db *gorm.DB) error {
 				return tx.AutoMigrate(&CountryManagement{})
 			},
 			Rollback: func(tx *gorm.DB) error {
+				return nil
+			},
+		},
+		{
+			ID: "20260504093000_country_relations_on_delete_cascade",
+			Migrate: func(tx *gorm.DB) error {
+				countryTable, err := tableName(tx, &CountryManagement{})
+				if err != nil {
+					return err
+				}
+				stageTable, err := tableName(tx, &StageManagement{})
+				if err != nil {
+					return err
+				}
+				countryStepsTable, err := tableName(tx, &CountryStepsManagement{})
+				if err != nil {
+					return err
+				}
+				infoTable, err := tableName(tx, &InformationCountryManagement{})
+				if err != nil {
+					return err
+				}
+
+				if err := replaceFK(tx, stageTable, "country_id", countryTable, "id", "fk_stage_managements_country", "CASCADE"); err != nil {
+					return err
+				}
+				if err := replaceFK(tx, countryStepsTable, "country_id", countryTable, "id", "fk_country_steps_managements_country", "CASCADE"); err != nil {
+					return err
+				}
+				if err := replaceFK(tx, infoTable, "country_id", countryTable, "id", "fk_information_country_managements_country", "CASCADE"); err != nil {
+					return err
+				}
+
+				return nil
+			},
+			Rollback: func(tx *gorm.DB) error {
+				countryTable, err := tableName(tx, &CountryManagement{})
+				if err != nil {
+					return err
+				}
+				stageTable, err := tableName(tx, &StageManagement{})
+				if err != nil {
+					return err
+				}
+				countryStepsTable, err := tableName(tx, &CountryStepsManagement{})
+				if err != nil {
+					return err
+				}
+				infoTable, err := tableName(tx, &InformationCountryManagement{})
+				if err != nil {
+					return err
+				}
+
+				if err := replaceFK(tx, stageTable, "country_id", countryTable, "id", "fk_stage_managements_country", "RESTRICT"); err != nil {
+					return err
+				}
+				if err := replaceFK(tx, countryStepsTable, "country_id", countryTable, "id", "fk_country_steps_managements_country", "RESTRICT"); err != nil {
+					return err
+				}
+				if err := replaceFK(tx, infoTable, "country_id", countryTable, "id", "fk_information_country_managements_country", "RESTRICT"); err != nil {
+					return err
+				}
+
 				return nil
 			},
 		},
