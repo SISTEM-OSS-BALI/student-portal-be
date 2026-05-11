@@ -3,25 +3,27 @@ package documents
 import "github.com/username/gin-gorm-api/internal/schema"
 
 type CreateDTO struct {
-	Label             string `json:"label" binding:"required"`
-	InternalCode      string `json:"internal_code" binding:"required"`
-	FileType          string `json:"file_type" binding:"required"`
-	Category          string `json:"category" binding:"required"`
-	TranslationNeeded string `json:"translation_needed" binding:"required"`
-	Required          *bool  `json:"required" binding:"required"`
+	Label             string                   `json:"label" binding:"required"`
+	InternalCode      string                   `json:"internal_code" binding:"required"`
+	FileType          string                   `json:"file_type" binding:"required"`
+	Category          string                   `json:"category" binding:"required"`
+	ExampleURL        *string                  `json:"example_url"`
+	TranslationNeeded string                   `json:"translation_needed" binding:"required"`
+	Required          *bool                    `json:"required" binding:"required"`
 	AutoRenamePattern schema.AutoRenamePattern `json:"auto_rename_pattern"`
-	Notes             string `json:"notes"`
+	Notes             string                   `json:"notes"`
 }
 
 type UpdateDTO struct {
-	Label             *string `json:"label"`
-	InternalCode      *string `json:"internal_code"`
-	FileType          *string `json:"file_type"`
-	Category          *string `json:"category"`
-	TranslationNeeded *string `json:"translation_needed"`
-	Required          *bool   `json:"required"`
+	Label             *string                   `json:"label"`
+	InternalCode      *string                   `json:"internal_code"`
+	FileType          *string                   `json:"file_type"`
+	Category          *string                   `json:"category"`
+	ExampleURL        *string                   `json:"example_url"`
+	TranslationNeeded *string                   `json:"translation_needed"`
+	Required          *bool                     `json:"required"`
 	AutoRenamePattern *schema.AutoRenamePattern `json:"auto_rename_pattern"`
-	Notes             *string `json:"notes"`
+	Notes             *string                   `json:"notes"`
 }
 
 type ResponseDTO struct {
@@ -30,6 +32,7 @@ type ResponseDTO struct {
 	InternalCode      string                   `json:"internal_code"`
 	FileType          string                   `json:"file_type"`
 	Category          string                   `json:"category"`
+	ExampleURL        *string                  `json:"example_url,omitempty"`
 	TranslationNeeded schema.TranslationNeeded `json:"translation_needed"`
 	Required          bool                     `json:"required"`
 	AutoRenamePattern schema.AutoRenamePattern `json:"auto_rename_pattern"`
@@ -43,6 +46,7 @@ func NewResponseDTO(doc schema.DocumentsManagement) ResponseDTO {
 		InternalCode:      doc.InternalCode,
 		FileType:          doc.FileType,
 		Category:          doc.Category,
+		ExampleURL:        doc.ExampleURL,
 		TranslationNeeded: doc.TranslationNeeded,
 		Required:          doc.Required,
 		AutoRenamePattern: doc.AutoRenamePattern,

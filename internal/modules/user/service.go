@@ -1,6 +1,7 @@
 package user
 
 import (
+	"errors"
 	"strings"
 	"time"
 
@@ -22,6 +23,9 @@ func normalizeOptionalString(value *string) *string {
 	}
 
 	trimmed := strings.TrimSpace(*value)
+	if trimmed == "" {
+		return nil
+	}
 	return &trimmed
 }
 
@@ -74,7 +78,7 @@ func buildStudentStatusAudit(actorID *string) (*string, *time.Time) {
 
 func (s *Service) Create(
 	name, email, password string,
-	stageID, currentStepID, visaStatus, studentStatus, nameConsultant, noPhone, nameCampus, degree, nameDegree, visaType *string,
+	stageID, currentStepID, visaStatus, studentStatus, nameConsultant, noPhone, nameCampus, degree, nameDegree, visaType, source *string,
 	translationQuota int,
 ) (schema.User, error) {
 	hashed, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
@@ -83,6 +87,16 @@ func (s *Service) Create(
 	}
 
 	visaStatus = normalizeOptionalString(visaStatus)
+	visaType = normalizeOptionalString(visaType)
+	if visaType != nil {
+		ok, err := s.repo.VisaTypeExists(*visaType)
+		if err != nil {
+			return schema.User{}, err
+		}
+		if !ok {
+			return schema.User{}, errors.New("invalid visa_type: not found")
+		}
+	}
 
 	user := schema.User{
 		Name:             name,
@@ -101,6 +115,7 @@ func (s *Service) Create(
 		NameDegree:       nameDegree,
 		VisaType:         visaType,
 		TranslationQuota: translationQuota,
+		Source:           source,
 	}
 	if err := s.repo.Create(&user); err != nil {
 		return schema.User{}, err
@@ -118,7 +133,7 @@ func (s *Service) GetByID(id string) (schema.User, error) {
 
 func (s *Service) Update(
 	id string,
-	name, email, stageID, currentStepID, visaStatus, studentStatus, nameConsultant, nameCampus, noPhone, degree, nameDegree, visaType *string,
+	name, email, stageID, currentStepID, visaStatus, studentStatus, nameConsultant, nameCampus, noPhone, degree, nameDegree, visaType, source *string,
 	translationQuota *int,
 	actorID *string,
 ) (schema.User, error) {
@@ -171,7 +186,20 @@ func (s *Service) Update(
 		user.NameDegree = nameDegree
 	}
 	if visaType != nil {
+		visaType = normalizeOptionalString(visaType)
+		if visaType != nil {
+			ok, err := s.repo.VisaTypeExists(*visaType)
+			if err != nil {
+				return schema.User{}, err
+			}
+			if !ok {
+				return schema.User{}, errors.New("invalid visa_type: not found")
+			}
+		}
 		user.VisaType = visaType
+	}
+	if source != nil {
+		user.Source = normalizeOptionalString(source)
 	}
 	if err := s.repo.Update(&user); err != nil {
 		return schema.User{}, err

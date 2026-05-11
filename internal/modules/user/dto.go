@@ -27,6 +27,7 @@ type CreateDTO struct {
 	DocumentConsentSignedAt *time.Time `json:"document_consent_signed_at"`
 	DocumentConsentSigned *bool `json:"document_consent_signed"`
 	VisaType         *string `json:"visa_type"`
+	Source           *string `json:"source"`
 	TranslationQuota int     `json:"translation_quota"`
 }
 
@@ -48,6 +49,7 @@ type UpdateDTO struct {
 	DocumentConsentSignedAt *time.Time `json:"document_consent_signed_at"`
 	DocumentConsentSigned *bool `json:"document_consent_signed"`
 	VisaType         *string `json:"visa_type"`
+	Source           *string `json:"source"`
 	TranslationQuota *int    `json:"translation_quota"`
 }
 
@@ -91,6 +93,8 @@ type ResponseDTO struct {
 	Stage                  *StageDTO        `json:"stage,omitempty"`
 	NameCampus             *string          `json:"name_campus,omitempty"`
 	VisaType               *string          `json:"visa_type,omitempty"`
+	VisaTypeName           *string          `json:"visa_type_name,omitempty"`
+	Source                 *string          `json:"source,omitempty"`
 	Degree                 *string          `json:"degree,omitempty"`
 	NameDegree             *string          `json:"name_degree,omitempty"`
 	DocumentConsentSignatureURL *string `json:"document_consent_signature_url"`
@@ -167,6 +171,17 @@ func NewResponseDTO(user schema.User) ResponseDTO {
 	studentStatusUpdatedByName := optionalUserName(user.StudentStatusUpdatedBy)
 	studentStatusUpdatedAtLabel := formatStudentStatusUpdatedAtLabel(user.StudentStatusUpdatedAt)
 	documentConsentSigned := boolPtr(user.DocumentConsentSigned)
+	source := user.Source
+	var visaTypeName *string
+	if user.VisaTypeDetail != nil && strings.TrimSpace(user.VisaTypeDetail.Name) != "" {
+		name := user.VisaTypeDetail.Name
+		visaTypeName = &name
+	}
+	if visaTypeName == nil && user.VisaType != nil && strings.TrimSpace(*user.VisaType) != "" {
+		// Backward compatibility: some databases may store visa_type as a label instead of an id.
+		val := strings.TrimSpace(*user.VisaType)
+		visaTypeName = &val
+	}
 
 	return ResponseDTO{
 		ID:                            user.ID,
@@ -194,6 +209,8 @@ func NewResponseDTO(user schema.User) ResponseDTO {
 		DocumentConsentSignedAt:       user.DocumentConsentSignedAt,
 		DocumentConsentSigned:         documentConsentSigned,
 		VisaType:                      user.VisaType,
+		VisaTypeName:                  visaTypeName,
+		Source:                        source,
 		JoinedAt:                      user.CreatedAt,
 		CreatedAt:                     user.CreatedAt,
 		UpdatedAt:                     user.UpdatedAt,

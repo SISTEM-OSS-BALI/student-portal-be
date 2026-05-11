@@ -34,6 +34,7 @@ func (s *Service) Create(input CreateDTO) (schema.DocumentsManagement, error) {
 		InternalCode:      input.InternalCode,
 		FileType:          input.FileType,
 		Category:          input.Category,
+		ExampleURL:        input.ExampleURL,
 		TranslationNeeded: translation,
 		Required:          *input.Required,
 		AutoRenamePattern: autoRename,
@@ -70,6 +71,9 @@ func (s *Service) Update(id string, input UpdateDTO) (schema.DocumentsManagement
 	}
 	if input.Category != nil {
 		doc.Category = *input.Category
+	}
+	if input.ExampleURL != nil {
+		doc.ExampleURL = input.ExampleURL
 	}
 	if input.TranslationNeeded != nil {
 		translation, err := parseTranslationNeeded(*input.TranslationNeeded)

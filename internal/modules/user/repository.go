@@ -19,6 +19,7 @@ type Repository interface {
 	PatchVisaStatus(id string, visaStatus *string, visaGrantedAt *time.Time) (schema.User, error)
 	PatchStudentStatus(id string, studentStatus schema.StatusStudent, updatedByID *string, updatedAt *time.Time) (schema.User, error)
 	PatchDocumentConsent(id string, payload PatchDocumentConsentDTO) (schema.User, error)
+	VisaTypeExists(id string) (bool, error)
 }
 
 type GormRepository struct {
@@ -35,7 +36,7 @@ func (r *GormRepository) Create(user *schema.User) error {
 
 func (r *GormRepository) List() ([]schema.User, error) {
 	var users []schema.User
-	if err := r.db.Preload("Stage").Preload("Stage.Country").Preload("Stage.Document").Preload("NotesStudent").Preload("StudentStatusUpdatedBy").
+	if err := r.db.Preload("Stage").Preload("Stage.Country").Preload("Stage.Document").Preload("NotesStudent").Preload("StudentStatusUpdatedBy").Preload("VisaTypeDetail").
 		Preload("Stage.Country.CountrySteps.Step").
 		Preload("Stage.Country.CountrySteps.Step.Children").
 		Order("id desc").Find(&users).Error; err != nil {
@@ -46,7 +47,7 @@ func (r *GormRepository) List() ([]schema.User, error) {
 
 func (r *GormRepository) GetByID(id string) (schema.User, error) {
 	var user schema.User
-	if err := r.db.Preload("Stage").Preload("Stage.Country").Preload("Stage.Document").Preload("NotesStudent").Preload("StudentStatusUpdatedBy").
+	if err := r.db.Preload("Stage").Preload("Stage.Country").Preload("Stage.Document").Preload("NotesStudent").Preload("StudentStatusUpdatedBy").Preload("VisaTypeDetail").
 		Preload("Stage.Country.CountrySteps.Step").
 		Preload("Stage.Country.CountrySteps.Step.Children").
 		Where("id = ?", id).First(&user).Error; err != nil {
@@ -73,7 +74,7 @@ func (r *GormRepository) Delete(id string) error {
 
 func (r *GormRepository) ListStudents() ([]schema.User, error) {
 	var users []schema.User
-	if err := r.db.Preload("Stage").Preload("Stage.Country").Preload("Stage.Document").Preload("NotesStudent").Preload("StudentStatusUpdatedBy").
+	if err := r.db.Preload("Stage").Preload("Stage.Country").Preload("Stage.Document").Preload("NotesStudent").Preload("StudentStatusUpdatedBy").Preload("VisaTypeDetail").
 		Preload("Stage.Country.CountrySteps.Step").
 		Preload("Stage.Country.CountrySteps.Step.Children").
 		Where("role = ?", schema.UserRoleStudent).Order("id desc").Find(&users).Error; err != nil {
@@ -150,4 +151,15 @@ func (r *GormRepository) PatchDocumentConsent(id string, payload PatchDocumentCo
 	}
 
 	return r.GetByID(id)
+}
+
+func (r *GormRepository) VisaTypeExists(id string) (bool, error) {
+	if id == "" {
+		return false, nil
+	}
+	var count int64
+	if err := r.db.Model(&schema.VisaTypeManagement{}).Where("id = ?", id).Count(&count).Error; err != nil {
+		return false, err
+	}
+	return count > 0, nil
 }

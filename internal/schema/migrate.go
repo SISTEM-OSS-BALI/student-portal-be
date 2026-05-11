@@ -12,6 +12,10 @@ type foreignKeyRef struct {
 	ConstraintName string `gorm:"column:CONSTRAINT_NAME"`
 }
 
+type indexRef struct {
+	IndexName string `gorm:"column:INDEX_NAME"`
+}
+
 func tableName(tx *gorm.DB, model interface{}) (string, error) {
 	stmt := &gorm.Statement{DB: tx}
 	if err := stmt.Parse(model); err != nil {
@@ -50,6 +54,14 @@ func replaceFK(tx *gorm.DB, table, column, refTable, refColumn, constraintName, 
 		)).Error; err != nil {
 			return err
 		}
+	}
+
+	// Ensure there is an index on the FK column (MySQL requires it).
+	if err := tx.Exec(fmt.Sprintf(
+		"ALTER TABLE `%s` ADD INDEX `idx_%s_%s` (`%s`)",
+		table, table, column, column,
+	)).Error; err != nil {
+		// ignore if index already exists or can't be created
 	}
 
 	return tx.Exec(fmt.Sprintf(`
@@ -691,6 +703,142 @@ func Migrate(db *gorm.DB) error {
 					return err
 				}
 
+				return nil
+			},
+		},
+		{
+			ID: "20260504120000_visa_type_managements",
+			Migrate: func(tx *gorm.DB) error {
+				return tx.AutoMigrate(&VisaTypeManagement{})
+			},
+			Rollback: func(tx *gorm.DB) error {
+				return nil
+			},
+		},
+		{
+			ID: "20260505100000_users_add_source",
+			Migrate: func(tx *gorm.DB) error {
+				migrator := tx.Migrator()
+				if !migrator.HasTable(&User{}) {
+					return nil
+				}
+
+				if !migrator.HasColumn(&User{}, "Source") {
+					if err := migrator.AddColumn(&User{}, "Source"); err != nil {
+						return err
+					}
+				}
+
+				// Create index for `source` using a safe explicit name (avoid GORM using field name as index name).
+				if tx.Dialector.Name() == "mysql" {
+					userTable, err := tableName(tx, &User{})
+					if err != nil {
+						return err
+					}
+
+					var existing []indexRef
+					if err := tx.Raw(`
+						SELECT INDEX_NAME
+						FROM information_schema.statistics
+						WHERE table_schema = DATABASE()
+						  AND table_name = ?
+						  AND column_name = 'source'
+					`, userTable).Scan(&existing).Error; err != nil {
+						return err
+					}
+
+					if len(existing) == 0 {
+						if err := tx.Exec(fmt.Sprintf(
+							"CREATE INDEX `idx_users_source` ON `%s` (`source`)",
+							userTable,
+						)).Error; err != nil {
+							return err
+						}
+					}
+				}
+
+				return tx.AutoMigrate(&User{})
+			},
+			Rollback: func(tx *gorm.DB) error {
+				return nil
+			},
+		},
+		{
+			ID: "20260505120000_users_visa_type_fk",
+			Migrate: func(tx *gorm.DB) error {
+				migrator := tx.Migrator()
+				if !migrator.HasTable(&User{}) || !migrator.HasTable(&VisaTypeManagement{}) {
+					return nil
+				}
+
+				userTable, err := tableName(tx, &User{})
+				if err != nil {
+					return err
+				}
+				visaTable, err := tableName(tx, &VisaTypeManagement{})
+				if err != nil {
+					return err
+				}
+
+				// Normalize old data: if users.visa_type stored as label instead of id, try map by name.
+				if tx.Dialector.Name() == "mysql" {
+					if err := tx.Exec(fmt.Sprintf(`
+						UPDATE %s u
+						JOIN %s v ON TRIM(u.visa_type) = TRIM(v.name)
+						SET u.visa_type = v.id
+						WHERE u.visa_type IS NOT NULL
+						  AND u.visa_type <> ''
+						  AND LENGTH(u.visa_type) <> 25
+					`, userTable, visaTable)).Error; err != nil {
+						return err
+					}
+
+					// Any remaining non-id values -> NULL
+					if err := tx.Exec(fmt.Sprintf(`
+						UPDATE %s
+						SET visa_type = NULL
+						WHERE visa_type IS NOT NULL
+						  AND visa_type <> ''
+						  AND LENGTH(visa_type) <> 25
+					`, userTable)).Error; err != nil {
+						return err
+					}
+				}
+
+				// Ensure column size is compatible with visa_type_managements.id (25).
+				if tx.Dialector.Name() == "mysql" {
+					if err := tx.Exec(fmt.Sprintf(`
+						ALTER TABLE %s
+						MODIFY visa_type VARCHAR(25) NULL
+					`, tx.Statement.Quote(userTable))).Error; err != nil {
+						return err
+					}
+				}
+
+				// Replace FK with ON DELETE SET NULL.
+				return replaceFK(tx, userTable, "visa_type", visaTable, "id", "fk_users_visa_type", "SET NULL")
+			},
+			Rollback: func(tx *gorm.DB) error {
+				return nil
+			},
+		},
+		{
+			ID: "20260505153000_documents_managements_add_example_url",
+			Migrate: func(tx *gorm.DB) error {
+				migrator := tx.Migrator()
+				if !migrator.HasTable(&DocumentsManagement{}) {
+					return nil
+				}
+
+				if !migrator.HasColumn(&DocumentsManagement{}, "ExampleURL") {
+					if err := migrator.AddColumn(&DocumentsManagement{}, "ExampleURL"); err != nil {
+						return err
+					}
+				}
+
+				return tx.AutoMigrate(&DocumentsManagement{})
+			},
+			Rollback: func(tx *gorm.DB) error {
 				return nil
 			},
 		},

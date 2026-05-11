@@ -25,6 +25,7 @@ import (
 	"github.com/username/gin-gorm-api/internal/modules/steps-management"
 	ticketmessage "github.com/username/gin-gorm-api/internal/modules/ticket-message"
 	"github.com/username/gin-gorm-api/internal/modules/user"
+	visatype "github.com/username/gin-gorm-api/internal/modules/visa-type-management"
 )
 
 func RegisterAll(rg *gin.RouterGroup, db *gorm.DB) {
@@ -52,4 +53,5 @@ func RegisterAll(rg *gin.RouterGroup, db *gorm.DB) {
 	countrysteps.RegisterRoutes(rg, db)
 	ticketmessage.RegisterRoutes(rg, db)
 	informationcountrymanagement.RegisterRoutes(rg, db)
+	visatype.RegisterRoutes(rg, db)
 }

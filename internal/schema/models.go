@@ -9,6 +9,7 @@ func AllModels() []interface{} {
 		&StepsManagement{},
 		&ChildStepsManagement{},
 		&CountryManagement{},
+		&VisaTypeManagement{},
 		&StageManagement{},
 		&CountryStepsManagement{},
 		&ChatConversation{},

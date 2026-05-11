@@ -95,7 +95,9 @@ type User struct {
 	DocumentConsentProofPhotoURL *string                             `json:"document_consent_proof_photo_url,omitempty" gorm:"size:500"`
 	DocumentConsentSignedAt      *time.Time                          `json:"document_consent_signed_at,omitempty" gorm:"index"`
 	DocumentConsentSigned        bool                                `json:"document_consent_signed" gorm:"not null;default:false"`
-	VisaType                     *string                             `json:"visa_type,omitempty" gorm:"size:50"`
+	VisaType                     *string                             `json:"visa_type,omitempty" gorm:"size:25;index"`
+	VisaTypeDetail               *VisaTypeManagement                  `json:"visa_type_detail,omitempty" gorm:"foreignKey:VisaType;references:ID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
+	Source                       *string                             `json:"source,omitempty" gorm:"size:100;index"`
 	TranslationQuota             int                                 `json:"translation_quota" gorm:"not null;default:0"`
 	NotesStudent                 []NoteStudent                       `json:"notes,omitempty" gorm:"foreignKey:UserID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 	GeneratedCVAI                *GeneratedCVAIDocument              `json:"generated_cv_ai,omitempty" gorm:"foreignKey:StudentID;references:ID"`
@@ -120,6 +122,7 @@ type DocumentsManagement struct {
 	InternalCode      string            `json:"internal_code" gorm:"size:50;not null;uniqueIndex"`
 	FileType          string            `json:"file_type" gorm:"size:50;not null"`
 	Category          string            `json:"category" gorm:"size:100;not null"`
+	ExampleURL        *string           `json:"example_url,omitempty" gorm:"size:500"`
 	TranslationNeeded TranslationNeeded `json:"translation_needed" gorm:"size:10;not null"`
 	Required          bool              `json:"required" gorm:"not null"`
 	AutoRenamePattern AutoRenamePattern `json:"auto_rename_pattern" gorm:"size:191"`
@@ -153,9 +156,19 @@ type CountryManagement struct {
 	Stages       []StageManagement              `json:"stages,omitempty" gorm:"foreignKey:CountryID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:RESTRICT;"`
 	CountrySteps []CountryStepsManagement       `json:"country_steps,omitempty" gorm:"foreignKey:CountryID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:RESTRICT;"`
 	Informations []InformationCountryManagement `json:"informations,omitempty" gorm:"foreignKey:CountryID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:RESTRICT;"`
+	VisaTypes    []VisaTypeManagement           `json:"visa_types,omitempty" gorm:"foreignKey:CountryID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 	CreatedAt    time.Time                      `json:"created_at"`
 	UpdatedAt    time.Time                      `json:"updated_at"`
 
+}
+
+type VisaTypeManagement struct {
+	ID        string            `json:"id" gorm:"primaryKey;size:25"`
+	Name      string            `json:"name" gorm:"size:120;not null"`
+	CountryID string            `json:"country_id" gorm:"size:25;not null;index"`
+	Country   *CountryManagement `json:"country,omitempty" gorm:"foreignKey:CountryID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	CreatedAt time.Time         `json:"created_at"`
+	UpdatedAt time.Time         `json:"updated_at"`
 }
 
 type StageManagement struct {
@@ -342,7 +355,7 @@ type MessageStatus struct {
 	MessageID string    `gorm:"size:26;not null;index"`
 	UserID    string    `gorm:"size:26;not null;index"`
 	Status    string    `gorm:"size:16;not null"`
-	At        time.Time `gorm:"not null;index"`
+	At        time.Time `gorm:"not null;index"` 
 }
 
 type AnswerSubmission struct {
@@ -599,6 +612,10 @@ type InformationCountryManagement struct {
 
 func (CountryManagement) TableName() string {
 	return "country_managements"
+}
+
+func (VisaTypeManagement) TableName() string {
+	return "visa_type_managements"
 }
 
 func (GeneratedCVAIDocument) TableName() string {
