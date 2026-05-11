@@ -1,6 +1,7 @@
 package schema
 
 import "time"
+import "gorm.io/gorm"
 
 type UserRole string
 type TranslationNeeded string
@@ -130,6 +131,7 @@ type DocumentsManagement struct {
 	Stages            []StageManagement `json:"stages,omitempty" gorm:"foreignKey:DocumentID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:RESTRICT;"`
 	CreatedAt         time.Time         `json:"created_at"`
 	UpdatedAt         time.Time         `json:"updated_at"`
+	DeletedAt         gorm.DeletedAt    `json:"deleted_at,omitempty" gorm:"index"`
 }
 
 type StepsManagement struct {
@@ -169,6 +171,7 @@ type VisaTypeManagement struct {
 	Country   *CountryManagement `json:"country,omitempty" gorm:"foreignKey:CountryID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 	CreatedAt time.Time         `json:"created_at"`
 	UpdatedAt time.Time         `json:"updated_at"`
+	DeletedAt gorm.DeletedAt    `json:"deleted_at,omitempty" gorm:"index"`
 }
 
 type StageManagement struct {
@@ -205,6 +208,7 @@ type QuestionBase struct {
 	Version                  int                `json:"version" gorm:"not null;default:1"`
 	CreatedAt                time.Time          `json:"created_at"`
 	UpdatedAt                time.Time          `json:"updated_at"`
+	DeletedAt                gorm.DeletedAt     `json:"deleted_at,omitempty" gorm:"index"`
 }
 
 type Question struct {
@@ -224,6 +228,7 @@ type Question struct {
 	Active      bool             `json:"active" gorm:"not null;default:true"`
 	CreatedAt   time.Time        `json:"created_at"`
 	UpdatedAt   time.Time        `json:"updated_at"`
+	DeletedAt   gorm.DeletedAt   `json:"deleted_at,omitempty" gorm:"index"`
 }
 
 type QuestionOption struct {
@@ -237,6 +242,7 @@ type QuestionOption struct {
 	Active     bool                   `json:"active" gorm:"not null;default:true"`
 	CreatedAt  time.Time              `json:"created_at"`
 	UpdatedAt  time.Time              `json:"updated_at"`
+	DeletedAt  gorm.DeletedAt         `json:"deleted_at,omitempty" gorm:"index"`
 }
 
 type ChatConversation struct {

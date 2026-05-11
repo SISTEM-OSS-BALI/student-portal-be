@@ -842,6 +842,24 @@ func Migrate(db *gorm.DB) error {
 				return nil
 			},
 		},
+		{
+			ID: "20260511120000_soft_delete_master_data",
+			Migrate: func(tx *gorm.DB) error {
+				if err := tx.AutoMigrate(
+					&DocumentsManagement{},
+					&VisaTypeManagement{},
+					&QuestionBase{},
+					&Question{},
+					&QuestionOption{},
+				); err != nil {
+					return err
+				}
+				return nil
+			},
+			Rollback: func(tx *gorm.DB) error {
+				return nil
+			},
+		},
 	})
 
 	if err := m.Migrate(); err != nil {

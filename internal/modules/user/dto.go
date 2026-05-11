@@ -130,6 +130,7 @@ type DocumentDTO struct {
 	InternalCode      string                   `json:"internal_code"`
 	FileType          string                   `json:"file_type"`
 	Category          string                   `json:"category"`
+	ExampleURL        *string                  `json:"example_url,omitempty"`
 	TranslationNeeded schema.TranslationNeeded `json:"translation_needed"`
 	Required          bool                     `json:"required"`
 	AutoRenamePattern schema.AutoRenamePattern `json:"auto_rename_pattern"`
@@ -264,6 +265,7 @@ func newDocumentDTO(doc *schema.DocumentsManagement) *DocumentDTO {
 		InternalCode:      doc.InternalCode,
 		FileType:          doc.FileType,
 		Category:          doc.Category,
+		ExampleURL:        doc.ExampleURL,
 		TranslationNeeded: doc.TranslationNeeded,
 		Required:          doc.Required,
 		AutoRenamePattern: doc.AutoRenamePattern,
