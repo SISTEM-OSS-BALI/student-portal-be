@@ -13,6 +13,7 @@ type StatementLetterApprovalStatus string
 type SponsorLetterDocumentStatus string
 type SponsorLetterApprovalStatus string
 type GeneratedDocumentSource string
+
 const (
 	UserRoleStudent   UserRole = "STUDENT"
 	UserRoleDirector  UserRole = "DIRECTOR"
@@ -97,9 +98,11 @@ type User struct {
 	DocumentConsentSignedAt      *time.Time                          `json:"document_consent_signed_at,omitempty" gorm:"index"`
 	DocumentConsentSigned        bool                                `json:"document_consent_signed" gorm:"not null;default:false"`
 	VisaType                     *string                             `json:"visa_type,omitempty" gorm:"size:25;index"`
-	VisaTypeDetail               *VisaTypeManagement                  `json:"visa_type_detail,omitempty" gorm:"foreignKey:VisaType;references:ID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
+	VisaTypeDetail               *VisaTypeManagement                 `json:"visa_type_detail,omitempty" gorm:"foreignKey:VisaType;references:ID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
 	Source                       *string                             `json:"source,omitempty" gorm:"size:100;index"`
+	SourceCategory               *string                             `json:"source_category,omitempty" gorm:"size:50;index"`
 	TranslationQuota             int                                 `json:"translation_quota" gorm:"not null;default:0"`
+	HasInitialTranslations       bool                                `json:"has_initial_translations" gorm:"not null;default:false"`
 	NotesStudent                 []NoteStudent                       `json:"notes,omitempty" gorm:"foreignKey:UserID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 	GeneratedCVAI                *GeneratedCVAIDocument              `json:"generated_cv_ai,omitempty" gorm:"foreignKey:StudentID;references:ID"`
 	GeneratedStatementLetterAI   *GeneratedStatementLetterAIDocument `json:"generated_statement_letter_ai,omitempty" gorm:"foreignKey:StudentID;references:ID"`
@@ -115,6 +118,17 @@ type NoteStudent struct {
 	Content   string    `json:"content" gorm:"type:text;not null"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
+}
+
+type PasswordResetOTP struct {
+	ID        string     `json:"id" gorm:"primaryKey;size:25"`
+	UserID    string     `json:"user_id" gorm:"size:25;not null;index"`
+	Email     string     `json:"email" gorm:"size:191;not null;index"`
+	Code      string     `json:"code" gorm:"size:191;not null"`
+	ExpiresAt time.Time  `json:"expires_at" gorm:"not null;index"`
+	UsedAt    *time.Time `json:"used_at,omitempty" gorm:"index"`
+	CreatedAt time.Time  `json:"created_at"`
+	UpdatedAt time.Time  `json:"updated_at"`
 }
 
 type DocumentsManagement struct {
@@ -152,7 +166,6 @@ type ChildStepsManagement struct {
 }
 
 type CountryManagement struct {
-
 	ID           string                         `json:"id" gorm:"primaryKey;size:25"`
 	NameCountry  string                         `json:"name" gorm:"column:name_country;size:120;not null"`
 	Stages       []StageManagement              `json:"stages,omitempty" gorm:"foreignKey:CountryID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:RESTRICT;"`
@@ -161,17 +174,16 @@ type CountryManagement struct {
 	VisaTypes    []VisaTypeManagement           `json:"visa_types,omitempty" gorm:"foreignKey:CountryID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 	CreatedAt    time.Time                      `json:"created_at"`
 	UpdatedAt    time.Time                      `json:"updated_at"`
-
 }
 
 type VisaTypeManagement struct {
-	ID        string            `json:"id" gorm:"primaryKey;size:25"`
-	Name      string            `json:"name" gorm:"size:120;not null"`
-	CountryID string            `json:"country_id" gorm:"size:25;not null;index"`
+	ID        string             `json:"id" gorm:"primaryKey;size:25"`
+	Name      string             `json:"name" gorm:"size:120;not null"`
+	CountryID string             `json:"country_id" gorm:"size:25;not null;index"`
 	Country   *CountryManagement `json:"country,omitempty" gorm:"foreignKey:CountryID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
-	CreatedAt time.Time         `json:"created_at"`
-	UpdatedAt time.Time         `json:"updated_at"`
-	DeletedAt gorm.DeletedAt    `json:"deleted_at,omitempty" gorm:"index"`
+	CreatedAt time.Time          `json:"created_at"`
+	UpdatedAt time.Time          `json:"updated_at"`
+	DeletedAt gorm.DeletedAt     `json:"deleted_at,omitempty" gorm:"index"`
 }
 
 type StageManagement struct {
@@ -246,14 +258,14 @@ type QuestionOption struct {
 }
 
 type ChatConversation struct {
-	ID          string    `json:"id" gorm:"primaryKey;size:25"`
-	Type        string    `json:"type" gorm:"size:16;not null"`
-	Title       *string   `json:"title" gorm:"size:120"`
-	CreatedByID string    `json:"created_by_id" gorm:"size:25;not null;index"`
+	ID          string                   `json:"id" gorm:"primaryKey;size:25"`
+	Type        string                   `json:"type" gorm:"size:16;not null"`
+	Title       *string                  `json:"title" gorm:"size:120"`
+	CreatedByID string                   `json:"created_by_id" gorm:"size:25;not null;index"`
 	Members     []ChatConversationMember `json:"members,omitempty" gorm:"foreignKey:ConversationID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 	Messages    []ChatMessage            `json:"messages,omitempty" gorm:"foreignKey:ConversationID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
+	CreatedAt   time.Time                `json:"created_at"`
+	UpdatedAt   time.Time                `json:"updated_at"`
 }
 
 type ChatConversationMember struct {
@@ -268,21 +280,21 @@ type ChatConversationMember struct {
 }
 
 type ChatMessage struct {
-	ID             string     `json:"id" gorm:"primaryKey;size:25"`
-	ConversationID string     `json:"conversation_id" gorm:"size:25;not null;index"`
-	SenderID       string     `json:"sender_id" gorm:"size:25;not null;index"`
-	Type           string     `json:"type" gorm:"size:16;not null"`
-	Text           *string    `json:"text,omitempty" gorm:"type:text"`
-	ReplyToID      *string    `json:"reply_to_id,omitempty" gorm:"size:25;index"`
-	ContextUserID  *string    `json:"context_user_id,omitempty" gorm:"size:25;index"`
-	ContextType    string     `json:"context_type,omitempty" gorm:"size:32"`
-	Sender         *User      `json:"sender,omitempty" gorm:"foreignKey:SenderID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	ID             string                  `json:"id" gorm:"primaryKey;size:25"`
+	ConversationID string                  `json:"conversation_id" gorm:"size:25;not null;index"`
+	SenderID       string                  `json:"sender_id" gorm:"size:25;not null;index"`
+	Type           string                  `json:"type" gorm:"size:16;not null"`
+	Text           *string                 `json:"text,omitempty" gorm:"type:text"`
+	ReplyToID      *string                 `json:"reply_to_id,omitempty" gorm:"size:25;index"`
+	ContextUserID  *string                 `json:"context_user_id,omitempty" gorm:"size:25;index"`
+	ContextType    string                  `json:"context_type,omitempty" gorm:"size:32"`
+	Sender         *User                   `json:"sender,omitempty" gorm:"foreignKey:SenderID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 	Attachments    []ChatMessageAttachment `json:"attachments,omitempty" gorm:"foreignKey:MessageID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 	Statuses       []ChatMessageStatus     `json:"statuses,omitempty" gorm:"foreignKey:MessageID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 	Mentions       []ChatMessageMention    `json:"mentions,omitempty" gorm:"foreignKey:MessageID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
-	CreatedAt      time.Time  `json:"created_at"`
-	EditedAt       *time.Time `json:"edited_at,omitempty"`
-	DeletedAt      *time.Time `json:"deleted_at,omitempty" gorm:"index"`
+	CreatedAt      time.Time               `json:"created_at"`
+	EditedAt       *time.Time              `json:"edited_at,omitempty"`
+	DeletedAt      *time.Time              `json:"deleted_at,omitempty" gorm:"index"`
 }
 
 type ChatMessageAttachment struct {
@@ -311,10 +323,10 @@ type ChatMessageMention struct {
 }
 
 type Conversation struct {
-	ID          string  `gorm:"primaryKey;size:26"`
-	Type        string  `gorm:"size:16;not null"`
-	Title       *string `gorm:"size:120"`
-	CreatedByID string  `gorm:"size:26;not null;index"`
+	ID          string               `gorm:"primaryKey;size:26"`
+	Type        string               `gorm:"size:16;not null"`
+	Title       *string              `gorm:"size:120"`
+	CreatedByID string               `gorm:"size:26;not null;index"`
 	Members     []ConversationMember `gorm:"foreignKey:ConversationID;references:ID"`
 	Messages    []Message            `gorm:"foreignKey:ConversationID;references:ID"`
 	CreatedAt   time.Time
@@ -333,15 +345,15 @@ type ConversationMember struct {
 }
 
 type Message struct {
-	ID             string     `gorm:"primaryKey;size:26"`
-	ConversationID string     `gorm:"size:26;not null;index"`
-	SenderID       string     `gorm:"size:26;not null;index"`
-	Type           string     `gorm:"size:16;not null"`
-	Text           *string    `gorm:"type:text"`
-	ReplyToID      *string    `gorm:"size:26;index"`
+	ID             string              `gorm:"primaryKey;size:26"`
+	ConversationID string              `gorm:"size:26;not null;index"`
+	SenderID       string              `gorm:"size:26;not null;index"`
+	Type           string              `gorm:"size:16;not null"`
+	Text           *string             `gorm:"type:text"`
+	ReplyToID      *string             `gorm:"size:26;index"`
 	Attachments    []MessageAttachment `gorm:"foreignKey:MessageID;references:ID"`
 	Statuses       []MessageStatus     `gorm:"foreignKey:MessageID;references:ID"`
-	CreatedAt      time.Time  `gorm:"index"`
+	CreatedAt      time.Time           `gorm:"index"`
 	EditedAt       *time.Time
 	DeletedAt      *time.Time `gorm:"index"`
 }
@@ -361,7 +373,7 @@ type MessageStatus struct {
 	MessageID string    `gorm:"size:26;not null;index"`
 	UserID    string    `gorm:"size:26;not null;index"`
 	Status    string    `gorm:"size:16;not null"`
-	At        time.Time `gorm:"not null;index"` 
+	At        time.Time `gorm:"not null;index"`
 }
 
 type AnswerSubmission struct {
@@ -574,22 +586,23 @@ type AnswerDocumentApproval struct {
 }
 
 type DocumentTranslation struct {
-	ID               string               `json:"id" gorm:"primaryKey;size:25"`
-	StudentID        string               `json:"student_id" gorm:"size:25;not null;index"`
-	DocumentID       string               `json:"document_id" gorm:"size:25;not null;index"`
-	Document         *DocumentsManagement `json:"document,omitempty" gorm:"foreignKey:DocumentID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:RESTRICT;"`
-	AnswerDocumentID *string              `json:"answer_document_id,omitempty" gorm:"size:25;index"`
-	AnswerDocument   *AnswerDocument      `json:"answer_document,omitempty" gorm:"foreignKey:AnswerDocumentID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
-	UploaderID       string               `json:"uploader_id" gorm:"size:25;not null;index"`
-	Uploader         *User                `json:"uploader,omitempty" gorm:"foreignKey:UploaderID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
-	FileURL          string               `json:"file_url" gorm:"type:text;not null"`
-	FilePath         *string              `json:"file_path,omitempty" gorm:"type:text"`
-	FileName         *string              `json:"file_name,omitempty" gorm:"size:191"`
-	FileType         *string              `json:"file_type,omitempty" gorm:"size:50"`
-	PageCount        int                  `json:"page_count" gorm:"not null;default:0"`
-	Status           *string              `json:"status,omitempty" gorm:"size:20"`
-	CreatedAt        time.Time            `json:"created_at"`
-	UpdatedAt        time.Time            `json:"updated_at"`
+	ID                    string               `json:"id" gorm:"primaryKey;size:25"`
+	StudentID             string               `json:"student_id" gorm:"size:25;not null;index"`
+	DocumentID            string               `json:"document_id" gorm:"size:25;not null;index"`
+	Document              *DocumentsManagement `json:"document,omitempty" gorm:"foreignKey:DocumentID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:RESTRICT;"`
+	AnswerDocumentID      *string              `json:"answer_document_id,omitempty" gorm:"size:25;index"`
+	AnswerDocument        *AnswerDocument      `json:"answer_document,omitempty" gorm:"foreignKey:AnswerDocumentID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
+	UploaderID            string               `json:"uploader_id" gorm:"size:25;not null;index"`
+	Uploader              *User                `json:"uploader,omitempty" gorm:"foreignKey:UploaderID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	FileURL               string               `json:"file_url" gorm:"type:text;not null"`
+	FilePath              *string              `json:"file_path,omitempty" gorm:"type:text"`
+	FileName              *string              `json:"file_name,omitempty" gorm:"size:191"`
+	FileType              *string              `json:"file_type,omitempty" gorm:"size:50"`
+	PageCount             int                  `json:"page_count" gorm:"not null;default:0"`
+	IsExistingTranslation bool                 `json:"is_existing_translation" gorm:"not null;default:false"`
+	Status                *string              `json:"status,omitempty" gorm:"size:20"`
+	CreatedAt             time.Time            `json:"created_at"`
+	UpdatedAt             time.Time            `json:"updated_at"`
 }
 
 type TicketMessage struct {
@@ -614,6 +627,18 @@ type InformationCountryManagement struct {
 	Country     *CountryManagement `json:"country,omitempty" gorm:"foreignKey:CountryID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:RESTRICT;"`
 	CreatedAt   time.Time          `json:"created_at"`
 	UpdatedAt   time.Time          `json:"updated_at"`
+}
+
+type Promo struct {
+	ID          string    `json:"id" gorm:"primaryKey;size:25"`
+	Code        string    `json:"code" gorm:"size:50;not null;uniqueIndex"`
+	Description *string   `json:"description,omitempty" gorm:"type:text"`
+	Discount    float64   `json:"discount" gorm:"not null;default:0"`
+	ValidFrom   time.Time `json:"valid_from" gorm:"not null"`
+	ValidTo     time.Time `json:"valid_to" gorm:"not null"`
+	IsActive    bool      `json:"is_active" gorm:"not null;default:true;index"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
 }
 
 func (CountryManagement) TableName() string {

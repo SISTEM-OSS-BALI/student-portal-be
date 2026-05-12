@@ -6,17 +6,19 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/username/gin-gorm-api/internal/modules/auth"
 	"github.com/username/gin-gorm-api/internal/httpx"
+	"github.com/username/gin-gorm-api/internal/modules/auth"
+	"github.com/username/gin-gorm-api/internal/notify"
 	"github.com/username/gin-gorm-api/internal/schema"
 )
 
 type Handler struct {
-	service *Service
+	service  *Service
+	notifier *notify.Service
 }
 
-func NewHandler(service *Service) *Handler {
-	return &Handler{service: service}
+func NewHandler(service *Service, notifier *notify.Service) *Handler {
+	return &Handler{service: service, notifier: notifier}
 }
 
 func (h *Handler) CreateQuestionBase(c *gin.Context) {
@@ -475,6 +477,12 @@ func (h *Handler) CreateAnswerDocuments(c *gin.Context) {
 		httpx.RespondError(c, http.StatusBadRequest, "create_failed", err.Error(), nil)
 		return
 	}
+
+	if h.notifier != nil && h.notifier.Enabled() && len(docs) > 0 {
+		studentID := docs[0].StudentID
+		_ = h.notifier.SendStudentUploadedDocumentEmail(studentID, docs)
+	}
+
 	c.JSON(http.StatusCreated, NewAnswerDocumentResponseListDTO(docs))
 }
 

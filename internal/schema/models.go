@@ -37,5 +37,7 @@ func AllModels() []interface{} {
 		&QuestionBase{},
 		&TicketMessage{},
 		&InformationCountryManagement{},
+		&Promo{},
+		&PasswordResetOTP{},
 	}
 }

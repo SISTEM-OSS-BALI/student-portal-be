@@ -35,8 +35,20 @@ func NewRepository(db *gorm.DB) *GormRepository {
 }
 
 func (r *GormRepository) Create(item *schema.DocumentTranslation) error {
+	var existing schema.DocumentTranslation
+	err := r.db.
+		Where("student_id = ? AND document_id = ?", item.StudentID, item.DocumentID).
+		First(&existing).Error
+	if err == nil {
+		item.ID = existing.ID
+		return r.Update(item)
+	}
+	if !errors.Is(err, gorm.ErrRecordNotFound) {
+		return err
+	}
+
 	return r.db.Transaction(func(tx *gorm.DB) error {
-		if item.StudentID != "" && item.PageCount > 0 {
+		if item.StudentID != "" && item.PageCount > 0 && !item.IsExistingTranslation {
 			result := tx.Model(&schema.User{}).
 				Where("id = ? AND translation_quota >= ?", item.StudentID, item.PageCount).
 				Update("translation_quota", gorm.Expr("translation_quota - ?", item.PageCount))
@@ -99,10 +111,21 @@ func (r *GormRepository) Update(item *schema.DocumentTranslation) error {
 		newStudentID := item.StudentID
 		oldPages := existing.PageCount
 		newPages := item.PageCount
+		oldIsExistingTranslation := existing.IsExistingTranslation
+		newIsExistingTranslation := item.IsExistingTranslation
 
 		if oldStudentID == newStudentID {
-			delta := newPages - oldPages
-			if delta > 0 {
+			oldChargedPages := 0
+			if !oldIsExistingTranslation {
+				oldChargedPages = oldPages
+			}
+			newChargedPages := 0
+			if !newIsExistingTranslation {
+				newChargedPages = newPages
+			}
+
+			delta := newChargedPages - oldChargedPages
+			if delta > 0 && newStudentID != "" {
 				result := tx.Model(&schema.User{}).
 					Where("id = ? AND translation_quota >= ?", newStudentID, delta).
 					Update("translation_quota", gorm.Expr("translation_quota - ?", delta))
@@ -113,7 +136,7 @@ func (r *GormRepository) Update(item *schema.DocumentTranslation) error {
 					return ErrTranslationQuotaExceeded
 				}
 			}
-			if delta < 0 {
+			if delta < 0 && newStudentID != "" {
 				if err := tx.Model(&schema.User{}).
 					Where("id = ?", newStudentID).
 					Update("translation_quota", gorm.Expr("translation_quota + ?", -delta)).
@@ -122,7 +145,7 @@ func (r *GormRepository) Update(item *schema.DocumentTranslation) error {
 				}
 			}
 		} else {
-			if oldStudentID != "" && oldPages > 0 {
+			if oldStudentID != "" && oldPages > 0 && !oldIsExistingTranslation {
 				if err := tx.Model(&schema.User{}).
 					Where("id = ?", oldStudentID).
 					Update("translation_quota", gorm.Expr("translation_quota + ?", oldPages)).
@@ -130,7 +153,7 @@ func (r *GormRepository) Update(item *schema.DocumentTranslation) error {
 					return err
 				}
 			}
-			if newStudentID != "" && newPages > 0 {
+			if newStudentID != "" && newPages > 0 && !newIsExistingTranslation {
 				result := tx.Model(&schema.User{}).
 					Where("id = ? AND translation_quota >= ?", newStudentID, newPages).
 					Update("translation_quota", gorm.Expr("translation_quota - ?", newPages))
@@ -158,7 +181,7 @@ func (r *GormRepository) Delete(id string) error {
 			return err
 		}
 
-		if item.StudentID == "" || item.PageCount <= 0 {
+		if item.StudentID == "" || item.PageCount <= 0 || item.IsExistingTranslation {
 			return nil
 		}
 		return tx.Model(&schema.User{}).

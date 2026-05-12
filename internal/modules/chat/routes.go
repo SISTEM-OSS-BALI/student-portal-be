@@ -4,6 +4,7 @@ import (
 	"log"
 
 	"github.com/gin-gonic/gin"
+	"github.com/username/gin-gorm-api/internal/notify"
 	"gorm.io/gorm"
 
 	"github.com/username/gin-gorm-api/internal/modules/auth"
@@ -11,7 +12,8 @@ import (
 
 func RegisterRoutes(rg *gin.RouterGroup, db *gorm.DB) {
 	repo := NewRepository(db)
-	service := NewService(repo)
+	notifier := notify.NewService(db)
+	service := NewService(repo, notifier)
 
 	socketServer, err := NewSocketServer(service)
 	if err != nil {

@@ -9,48 +9,54 @@ import (
 )
 
 type CreateDTO struct {
-	Name             string  `json:"name" binding:"required"`
-	Email            string  `json:"email" binding:"required,email"`
-	Role             string  `json:"role" binding:"omitempty,oneof=student admission director" default:"student"`
-	Password         string  `json:"password" binding:"required,min=8"`
-	StageID          *string `json:"stage_id"`
-	CurrentStepID    *string `json:"current_step_id"`
-	VisaStatus       *string `json:"visa_status"`
-	StudentStatus    *string `json:"student_status"`
-	NameConsultant   *string `json:"name_consultant"`
-	NoPhone          *string `json:"no_phone"`
-	NameCampus       *string `json:"name_campus"`
-	Degree           *string `json:"degree"`
-	NameDegree       *string `json:"name_degree"`
-	DocumentConsentSignatureURL *string `json:"document_consent_signature_url"`
-	DocumentConsentProofPhotoURL *string `json:"document_consent_proof_photo_url"`
-	DocumentConsentSignedAt *time.Time `json:"document_consent_signed_at"`
-	DocumentConsentSigned *bool `json:"document_consent_signed"`
-	VisaType         *string `json:"visa_type"`
-	Source           *string `json:"source"`
-	TranslationQuota int     `json:"translation_quota"`
+	Name                         string     `json:"name" binding:"required"`
+	Email                        string     `json:"email" binding:"required,email"`
+	Role                         string     `json:"role" binding:"omitempty,oneof=student admission director" default:"student"`
+	Password                     string     `json:"password" binding:"required,min=8"`
+	StageID                      *string    `json:"stage_id"`
+	CurrentStepID                *string    `json:"current_step_id"`
+	VisaStatus                   *string    `json:"visa_status"`
+	VisaGrantedAt                *time.Time `json:"visa_granted_at"`
+	StudentStatus                *string    `json:"student_status"`
+	NameConsultant               *string    `json:"name_consultant"`
+	NoPhone                      *string    `json:"no_phone"`
+	NameCampus                   *string    `json:"name_campus"`
+	Degree                       *string    `json:"degree"`
+	NameDegree                   *string    `json:"name_degree"`
+	DocumentConsentSignatureURL  *string    `json:"document_consent_signature_url"`
+	DocumentConsentProofPhotoURL *string    `json:"document_consent_proof_photo_url"`
+	DocumentConsentSignedAt      *time.Time `json:"document_consent_signed_at"`
+	DocumentConsentSigned        *bool      `json:"document_consent_signed"`
+	VisaType                     *string    `json:"visa_type"`
+	Source                       *string    `json:"source"`
+	SourceCategory               *string    `json:"source_category"`
+	TranslationQuota             int        `json:"translation_quota"`
+	HasInitialTranslations       bool       `json:"has_initial_translations"`
 }
 
 type UpdateDTO struct {
-	Name             *string `json:"name"`
-	Email            *string `json:"email"`
-	Role             *string `json:"role"`
-	NoPhone          *string `json:"no_phone"`
-	StageID          *string `json:"stage_id"`
-	CurrentStepID    *string `json:"current_step_id"`
-	VisaStatus       *string `json:"visa_status"`
-	StudentStatus    *string `json:"student_status"`
-	NameConsultant   *string `json:"name_consultant"`
-	NameCampus       *string `json:"name_campus"`
-	NameDegree       *string `json:"name_degree"`
-	Degree           *string `json:"degree"`
-	DocumentConsentSignatureURL *string `json:"document_consent_signature_url"`
-	DocumentConsentProofPhotoURL *string `json:"document_consent_proof_photo_url"`
-	DocumentConsentSignedAt *time.Time `json:"document_consent_signed_at"`
-	DocumentConsentSigned *bool `json:"document_consent_signed"`
-	VisaType         *string `json:"visa_type"`
-	Source           *string `json:"source"`
-	TranslationQuota *int    `json:"translation_quota"`
+	Name                         *string    `json:"name"`
+	Email                        *string    `json:"email"`
+	Role                         *string    `json:"role"`
+	NoPhone                      *string    `json:"no_phone"`
+	StageID                      *string    `json:"stage_id"`
+	CurrentStepID                *string    `json:"current_step_id"`
+	VisaStatus                   *string    `json:"visa_status"`
+	VisaGrantedAt                *time.Time `json:"visa_granted_at"`
+	StudentStatus                *string    `json:"student_status"`
+	NameConsultant               *string    `json:"name_consultant"`
+	NameCampus                   *string    `json:"name_campus"`
+	NameDegree                   *string    `json:"name_degree"`
+	Degree                       *string    `json:"degree"`
+	DocumentConsentSignatureURL  *string    `json:"document_consent_signature_url"`
+	DocumentConsentProofPhotoURL *string    `json:"document_consent_proof_photo_url"`
+	DocumentConsentSignedAt      *time.Time `json:"document_consent_signed_at"`
+	DocumentConsentSigned        *bool      `json:"document_consent_signed"`
+	VisaType                     *string    `json:"visa_type"`
+	Source                       *string    `json:"source"`
+	SourceCategory               *string    `json:"source_category"`
+	TranslationQuota             *int       `json:"translation_quota"`
+	HasInitialTranslations       *bool      `json:"has_initial_translations"`
 }
 
 type PatchQuotaTranslationDTO struct {
@@ -73,39 +79,41 @@ type PatchDocumentConsentDTO struct {
 }
 
 type ResponseDTO struct {
-	ID                     string           `json:"id"`
-	Name                   string           `json:"name"`
-	Email                  string           `json:"email"`
-	Role                   string           `json:"role"`
-	NoPhone                *string          `json:"no_phone,omitempty"`
-	StageID                *string          `json:"stage_id,omitempty"`
-	CurrentStepID          *string          `json:"current_step_id,omitempty"`
-	VisaStatus             *string          `json:"visa_status,omitempty"`
-	VisaGrantedAt          *time.Time       `json:"visa_granted_at,omitempty"`
-	VisaGrantDurationDays  *int             `json:"visa_grant_duration_days,omitempty"`
-	VisaGrantDurationLabel *string          `json:"visa_grant_duration_label,omitempty"`
-	StudentStatus          string           `json:"student_status"`
-	StudentStatusUpdatedByID    *string          `json:"student_status_updated_by_id,omitempty"`
-	StudentStatusUpdatedByName  *string          `json:"student_status_updated_by_name,omitempty"`
-	StudentStatusUpdatedAt      *time.Time       `json:"student_status_updated_at,omitempty"`
-	StudentStatusUpdatedAtLabel *string          `json:"student_status_updated_at_label,omitempty"`
-	NameConsultant         *string          `json:"name_consultant,omitempty"`
-	Stage                  *StageDTO        `json:"stage,omitempty"`
-	NameCampus             *string          `json:"name_campus,omitempty"`
-	VisaType               *string          `json:"visa_type,omitempty"`
-	VisaTypeName           *string          `json:"visa_type_name,omitempty"`
-	Source                 *string          `json:"source,omitempty"`
-	Degree                 *string          `json:"degree,omitempty"`
-	NameDegree             *string          `json:"name_degree,omitempty"`
-	DocumentConsentSignatureURL *string `json:"document_consent_signature_url"`
-	DocumentConsentProofPhotoURL *string `json:"document_consent_proof_photo_url"`
-	DocumentConsentSignedAt *time.Time `json:"document_consent_signed_at"`
-	DocumentConsentSigned *bool `json:"document_consent_signed"`
-	TranslationQuota       int              `json:"translation_quota"`
-	NotesStudent           []NoteStudentDTO `json:"notes,omitempty"`
-	JoinedAt               time.Time        `json:"joined_at"`
-	CreatedAt              time.Time        `json:"created_at"`
-	UpdatedAt              time.Time        `json:"updated_at"`
+	ID                           string           `json:"id"`
+	Name                         string           `json:"name"`
+	Email                        string           `json:"email"`
+	Role                         string           `json:"role"`
+	NoPhone                      *string          `json:"no_phone,omitempty"`
+	StageID                      *string          `json:"stage_id,omitempty"`
+	CurrentStepID                *string          `json:"current_step_id,omitempty"`
+	VisaStatus                   *string          `json:"visa_status,omitempty"`
+	VisaGrantedAt                *time.Time       `json:"visa_granted_at,omitempty"`
+	VisaGrantDurationDays        *int             `json:"visa_grant_duration_days,omitempty"`
+	VisaGrantDurationLabel       *string          `json:"visa_grant_duration_label,omitempty"`
+	StudentStatus                string           `json:"student_status"`
+	StudentStatusUpdatedByID     *string          `json:"student_status_updated_by_id,omitempty"`
+	StudentStatusUpdatedByName   *string          `json:"student_status_updated_by_name,omitempty"`
+	StudentStatusUpdatedAt       *time.Time       `json:"student_status_updated_at,omitempty"`
+	StudentStatusUpdatedAtLabel  *string          `json:"student_status_updated_at_label,omitempty"`
+	NameConsultant               *string          `json:"name_consultant,omitempty"`
+	Stage                        *StageDTO        `json:"stage,omitempty"`
+	NameCampus                   *string          `json:"name_campus,omitempty"`
+	VisaType                     *string          `json:"visa_type,omitempty"`
+	VisaTypeName                 *string          `json:"visa_type_name,omitempty"`
+	Source                       *string          `json:"source,omitempty"`
+	SourceCategory               *string          `json:"source_category,omitempty"`
+	Degree                       *string          `json:"degree,omitempty"`
+	NameDegree                   *string          `json:"name_degree,omitempty"`
+	DocumentConsentSignatureURL  *string          `json:"document_consent_signature_url"`
+	DocumentConsentProofPhotoURL *string          `json:"document_consent_proof_photo_url"`
+	DocumentConsentSignedAt      *time.Time       `json:"document_consent_signed_at"`
+	DocumentConsentSigned        *bool            `json:"document_consent_signed"`
+	TranslationQuota             int              `json:"translation_quota"`
+	HasInitialTranslations       bool             `json:"has_initial_translations"`
+	NotesStudent                 []NoteStudentDTO `json:"notes,omitempty"`
+	JoinedAt                     time.Time        `json:"joined_at"`
+	CreatedAt                    time.Time        `json:"created_at"`
+	UpdatedAt                    time.Time        `json:"updated_at"`
 }
 
 type StageDTO struct {
@@ -161,8 +169,6 @@ type ChildDTO struct {
 	Label string `json:"label"`
 }
 
-
-
 func boolPtr(v bool) *bool {
 	return &v
 }
@@ -185,39 +191,41 @@ func NewResponseDTO(user schema.User) ResponseDTO {
 	}
 
 	return ResponseDTO{
-		ID:                            user.ID,
-		Name:                          user.Name,
-		Email:                         user.Email,
-		Role:                          string(user.Role),
-		NoPhone:                       user.NoPhone,
-		StageID:                       user.StageID,
-		CurrentStepID:                 user.CurrentStepID,
-		VisaStatus:                    user.VisaStatus,
-		VisaGrantedAt:                 user.VisaGrantedAt,
-		VisaGrantDurationDays:         visaGrantDurationDays,
-		VisaGrantDurationLabel:        visaGrantDurationLabel,
-		StudentStatus:                 string(user.StudentStatus),
-		StudentStatusUpdatedByID:      user.StudentStatusUpdatedByID,
-		StudentStatusUpdatedByName:    studentStatusUpdatedByName,
-		StudentStatusUpdatedAt:        user.StudentStatusUpdatedAt,
-		StudentStatusUpdatedAtLabel:   studentStatusUpdatedAtLabel,
-		NameConsultant:                user.NameConsultant,
-		NameCampus:                    user.NameCampus,
-		Degree:                        user.Degree,
-		NameDegree:                    user.NameDegree,
-		DocumentConsentSignatureURL:   user.DocumentConsentSignatureURL,
-		DocumentConsentProofPhotoURL:  user.DocumentConsentProofPhotoURL,
-		DocumentConsentSignedAt:       user.DocumentConsentSignedAt,
-		DocumentConsentSigned:         documentConsentSigned,
-		VisaType:                      user.VisaType,
-		VisaTypeName:                  visaTypeName,
-		Source:                        source,
-		JoinedAt:                      user.CreatedAt,
-		CreatedAt:                     user.CreatedAt,
-		UpdatedAt:                     user.UpdatedAt,
-		Stage:                         newStageDTO(user.Stage),
-		NotesStudent:                  newNoteStudentListDTO(user.NotesStudent),
-		TranslationQuota:              user.TranslationQuota,
+		ID:                           user.ID,
+		Name:                         user.Name,
+		Email:                        user.Email,
+		Role:                         string(user.Role),
+		NoPhone:                      user.NoPhone,
+		StageID:                      user.StageID,
+		CurrentStepID:                user.CurrentStepID,
+		VisaStatus:                   user.VisaStatus,
+		VisaGrantedAt:                user.VisaGrantedAt,
+		VisaGrantDurationDays:        visaGrantDurationDays,
+		VisaGrantDurationLabel:       visaGrantDurationLabel,
+		StudentStatus:                string(user.StudentStatus),
+		StudentStatusUpdatedByID:     user.StudentStatusUpdatedByID,
+		StudentStatusUpdatedByName:   studentStatusUpdatedByName,
+		StudentStatusUpdatedAt:       user.StudentStatusUpdatedAt,
+		StudentStatusUpdatedAtLabel:  studentStatusUpdatedAtLabel,
+		NameConsultant:               user.NameConsultant,
+		NameCampus:                   user.NameCampus,
+		Degree:                       user.Degree,
+		NameDegree:                   user.NameDegree,
+		DocumentConsentSignatureURL:  user.DocumentConsentSignatureURL,
+		DocumentConsentProofPhotoURL: user.DocumentConsentProofPhotoURL,
+		DocumentConsentSignedAt:      user.DocumentConsentSignedAt,
+		DocumentConsentSigned:        documentConsentSigned,
+		VisaType:                     user.VisaType,
+		VisaTypeName:                 visaTypeName,
+		Source:                       source,
+		SourceCategory:               user.SourceCategory,
+		JoinedAt:                     user.CreatedAt,
+		CreatedAt:                    user.CreatedAt,
+		UpdatedAt:                    user.UpdatedAt,
+		Stage:                        newStageDTO(user.Stage),
+		NotesStudent:                 newNoteStudentListDTO(user.NotesStudent),
+		TranslationQuota:             user.TranslationQuota,
+		HasInitialTranslations:       user.HasInitialTranslations,
 	}
 }
 

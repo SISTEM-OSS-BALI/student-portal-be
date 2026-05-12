@@ -1,6 +1,10 @@
 package auth
 
-import "github.com/username/gin-gorm-api/internal/schema"
+import (
+	"time"
+
+	"github.com/username/gin-gorm-api/internal/schema"
+)
 
 type LoginDTO struct {
 	Email    string `json:"email" binding:"required,email"`
@@ -21,12 +25,29 @@ type UserDTO struct {
 }
 
 type LoginResponseDTO struct {
-	Token string `json:"token"`
+	Token string  `json:"token"`
 	User  UserDTO `json:"user"`
 }
 
 type RegisterResponseDTO struct {
 	User UserDTO `json:"user"`
+}
+
+type ForgotPasswordDTO struct {
+	Email string `json:"email" binding:"required,email"`
+}
+
+type ForgotPasswordResponseDTO struct {
+	Message      string     `json:"message"`
+	ResetOTP     *string    `json:"reset_otp,omitempty"`
+	ResetExpires *time.Time `json:"reset_expires,omitempty"`
+}
+
+type ResetPasswordDTO struct {
+	Email           string `json:"email" binding:"required,email"`
+	OTP             string `json:"otp" binding:"required"`
+	NewPassword     string `json:"new_password" binding:"required,min=8"`
+	ConfirmPassword string `json:"confirm_password" binding:"required,min=8"`
 }
 
 func NewUserDTO(user schema.User) UserDTO {

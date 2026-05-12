@@ -78,8 +78,9 @@ func buildStudentStatusAudit(actorID *string) (*string, *time.Time) {
 
 func (s *Service) Create(
 	name, email, password string,
-	stageID, currentStepID, visaStatus, studentStatus, nameConsultant, noPhone, nameCampus, degree, nameDegree, visaType, source *string,
+	stageID, currentStepID, visaStatus, studentStatus, nameConsultant, noPhone, nameCampus, degree, nameDegree, visaType, source, sourceCategory *string,
 	translationQuota int,
+	hasInitialTranslations bool,
 ) (schema.User, error) {
 	hashed, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
@@ -99,23 +100,25 @@ func (s *Service) Create(
 	}
 
 	user := schema.User{
-		Name:             name,
-		Email:            email,
-		Password:         string(hashed),
-		Role:             schema.UserRoleStudent,
-		StageID:          stageID,
-		CurrentStepID:    currentStepID,
-		VisaStatus:       visaStatus,
-		VisaGrantedAt:    resolveVisaGrantedAt(visaStatus, nil),
-		StudentStatus:    resolveStudentStatus(studentStatus, schema.StatusStudentOnGoing),
-		NameConsultant:   nameConsultant,
-		NoPhone:          noPhone,
-		NameCampus:       nameCampus,
-		Degree:           degree,
-		NameDegree:       nameDegree,
-		VisaType:         visaType,
-		TranslationQuota: translationQuota,
-		Source:           source,
+		Name:                   name,
+		Email:                  email,
+		Password:               string(hashed),
+		Role:                   schema.UserRoleStudent,
+		StageID:                stageID,
+		CurrentStepID:          currentStepID,
+		VisaStatus:             visaStatus,
+		VisaGrantedAt:          resolveVisaGrantedAt(visaStatus, nil),
+		StudentStatus:          resolveStudentStatus(studentStatus, schema.StatusStudentOnGoing),
+		NameConsultant:         nameConsultant,
+		NoPhone:                noPhone,
+		NameCampus:             nameCampus,
+		Degree:                 degree,
+		NameDegree:             nameDegree,
+		VisaType:               visaType,
+		TranslationQuota:       translationQuota,
+		HasInitialTranslations: hasInitialTranslations,
+		Source:                 source,
+		SourceCategory:         normalizeOptionalString(sourceCategory),
 	}
 	if err := s.repo.Create(&user); err != nil {
 		return schema.User{}, err
@@ -133,8 +136,10 @@ func (s *Service) GetByID(id string) (schema.User, error) {
 
 func (s *Service) Update(
 	id string,
-	name, email, stageID, currentStepID, visaStatus, studentStatus, nameConsultant, nameCampus, noPhone, degree, nameDegree, visaType, source *string,
+	name, email, stageID, currentStepID, visaStatus, studentStatus, nameConsultant, nameCampus, noPhone, degree, nameDegree, visaType, source, sourceCategory *string,
+	visaGrantedAt *time.Time,
 	translationQuota *int,
+	hasInitialTranslations *bool,
 	actorID *string,
 ) (schema.User, error) {
 	user, err := s.repo.GetByID(id)
@@ -157,6 +162,9 @@ func (s *Service) Update(
 		visaStatus = normalizeOptionalString(visaStatus)
 		user.VisaStatus = visaStatus
 		user.VisaGrantedAt = resolveVisaGrantedAt(visaStatus, user.VisaGrantedAt)
+	}
+	if visaGrantedAt != nil {
+		user.VisaGrantedAt = visaGrantedAt
 	}
 	if studentStatus != nil {
 		nextStatus := resolveStudentStatus(studentStatus, user.StudentStatus)
@@ -181,6 +189,9 @@ func (s *Service) Update(
 	if translationQuota != nil {
 		user.TranslationQuota = *translationQuota
 	}
+	if hasInitialTranslations != nil {
+		user.HasInitialTranslations = *hasInitialTranslations
+	}
 
 	if nameDegree != nil {
 		user.NameDegree = nameDegree
@@ -200,6 +211,9 @@ func (s *Service) Update(
 	}
 	if source != nil {
 		user.Source = normalizeOptionalString(source)
+	}
+	if sourceCategory != nil {
+		user.SourceCategory = normalizeOptionalString(sourceCategory)
 	}
 	if err := s.repo.Update(&user); err != nil {
 		return schema.User{}, err

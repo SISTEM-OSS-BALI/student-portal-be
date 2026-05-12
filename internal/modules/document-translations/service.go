@@ -22,16 +22,17 @@ func (s *Service) Create(input CreateDTO) (schema.DocumentTranslation, error) {
 	}
 
 	item := schema.DocumentTranslation{
-		StudentID:        input.StudentID,
-		DocumentID:       input.DocumentID,
-		UploaderID:       input.UploaderID,
-		AnswerDocumentID: input.AnswerDocumentID,
-		FileURL:          input.FileURL,
-		FilePath:         input.FilePath,
-		FileName:         input.FileName,
-		FileType:         input.FileType,
-		PageCount:        input.PageCount,
-		Status:           status,
+		StudentID:             input.StudentID,
+		DocumentID:            input.DocumentID,
+		UploaderID:            input.UploaderID,
+		AnswerDocumentID:      input.AnswerDocumentID,
+		FileURL:               input.FileURL,
+		FilePath:              input.FilePath,
+		FileName:              input.FileName,
+		FileType:              input.FileType,
+		PageCount:             input.PageCount,
+		IsExistingTranslation: input.IsExistingTranslation,
+		Status:                status,
 	}
 
 	if input.CreatedAt != nil {
@@ -85,6 +86,9 @@ func (s *Service) Update(id string, input UpdateDTO) (schema.DocumentTranslation
 	}
 	if input.PageCount != nil {
 		item.PageCount = *input.PageCount
+	}
+	if input.IsExistingTranslation != nil {
+		item.IsExistingTranslation = *input.IsExistingTranslation
 	}
 	if input.Status != nil {
 		item.Status = input.Status

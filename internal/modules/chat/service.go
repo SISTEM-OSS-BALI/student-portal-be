@@ -5,15 +5,17 @@ import (
 	"strings"
 	"time"
 
+	"github.com/username/gin-gorm-api/internal/notify"
 	"github.com/username/gin-gorm-api/internal/schema"
 )
 
 type Service struct {
-	repo Repository
+	repo     Repository
+	notifier *notify.Service
 }
 
-func NewService(repo Repository) *Service {
-	return &Service{repo: repo}
+func NewService(repo Repository, notifier *notify.Service) *Service {
+	return &Service{repo: repo, notifier: notifier}
 }
 
 func (s *Service) CreateConversation(creatorID string, input CreateConversationDTO) (schema.ChatConversation, error) {
@@ -133,7 +135,16 @@ func (s *Service) SendMessage(conversationID, senderID string, input SendMessage
 		return schema.ChatMessage{}, err
 	}
 
-	return s.repo.GetMessageByID(message.ID)
+	fullMessage, err := s.repo.GetMessageByID(message.ID)
+	if err != nil {
+		return schema.ChatMessage{}, err
+	}
+
+	if s.notifier != nil && s.notifier.Enabled() && len(input.MentionUserIDs) > 0 {
+		_ = s.notifier.SendMentionEmail(fullMessage, input.MentionUserIDs)
+	}
+
+	return fullMessage, nil
 }
 
 func (s *Service) MarkRead(conversationID, userID string, at time.Time) error {

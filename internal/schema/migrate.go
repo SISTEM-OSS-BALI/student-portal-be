@@ -860,6 +860,97 @@ func Migrate(db *gorm.DB) error {
 				return nil
 			},
 		},
+		{
+			ID: "20260512110000_users_and_document_translations_existing_flags",
+			Migrate: func(tx *gorm.DB) error {
+				return tx.AutoMigrate(&User{}, &DocumentTranslation{})
+			},
+			Rollback: func(tx *gorm.DB) error {
+				return nil
+			},
+		},
+		{
+			ID: "20260512170000_password_reset_otps",
+			Migrate: func(tx *gorm.DB) error {
+				return tx.AutoMigrate(&PasswordResetOTP{})
+			},
+			Rollback: func(tx *gorm.DB) error {
+				return nil
+			},
+		},
+		{
+			ID: "20260512173000_users_add_source_category",
+			Migrate: func(tx *gorm.DB) error {
+				migrator := tx.Migrator()
+				if !migrator.HasTable(&User{}) {
+					return nil
+				}
+
+				if !migrator.HasColumn(&User{}, "SourceCategory") {
+					if err := migrator.AddColumn(&User{}, "SourceCategory"); err != nil {
+						return err
+					}
+				}
+
+				if tx.Dialector.Name() == "mysql" {
+					userTable, err := tableName(tx, &User{})
+					if err != nil {
+						return err
+					}
+
+					var existing []indexRef
+					if err := tx.Raw(`
+						SELECT INDEX_NAME
+						FROM information_schema.statistics
+						WHERE table_schema = DATABASE()
+						  AND table_name = ?
+						  AND column_name = 'source_category'
+					`, userTable).Scan(&existing).Error; err != nil {
+						return err
+					}
+
+					if len(existing) == 0 {
+						if err := tx.Exec(fmt.Sprintf(
+							"CREATE INDEX `idx_users_source_category` ON `%s` (`source_category`)",
+							userTable,
+						)).Error; err != nil {
+							return err
+						}
+					}
+				}
+
+				return tx.AutoMigrate(&User{})
+			},
+			Rollback: func(tx *gorm.DB) error {
+				return nil
+			},
+		},
+		{
+			ID: "20260512190000_promos_add_is_active",
+			Migrate: func(tx *gorm.DB) error {
+				migrator := tx.Migrator()
+				if !migrator.HasTable(&Promo{}) {
+					if err := tx.AutoMigrate(&Promo{}); err != nil {
+						return err
+					}
+				}
+
+				if !migrator.HasColumn(&Promo{}, "IsActive") {
+					if err := migrator.AddColumn(&Promo{}, "IsActive"); err != nil {
+						return err
+					}
+				}
+
+				if err := tx.Model(&Promo{}).Where("is_active IS NULL").Update("is_active", true).Error; err != nil {
+					return err
+				}
+
+				return tx.AutoMigrate(&Promo{})
+			},
+			Rollback: func(tx *gorm.DB) error {
+				return nil
+			},
+		},
 	})
 
 	if err := m.Migrate(); err != nil {

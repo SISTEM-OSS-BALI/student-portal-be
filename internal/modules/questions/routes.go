@@ -2,6 +2,7 @@ package questions
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/username/gin-gorm-api/internal/notify"
 	"gorm.io/gorm"
 
 	"github.com/username/gin-gorm-api/internal/modules/auth"
@@ -10,7 +11,8 @@ import (
 func RegisterRoutes(rg *gin.RouterGroup, db *gorm.DB) {
 	repo := NewRepository(db)
 	service := NewService(repo)
-	handler := NewHandler(service)
+	notifier := notify.NewService(db)
+	handler := NewHandler(service, notifier)
 
 	protected := rg.Group("")
 	protected.Use(auth.AuthMiddleware())

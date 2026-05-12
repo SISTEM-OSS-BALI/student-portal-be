@@ -71,7 +71,9 @@ func (h *Handler) Create(c *gin.Context) {
 		input.NameDegree,
 		input.VisaType,
 		input.Source,
+		input.SourceCategory,
 		input.TranslationQuota,
+		input.HasInitialTranslations,
 	)
 	if err != nil {
 		httpx.RespondError(c, http.StatusBadRequest, "create_failed", err.Error(), nil)
@@ -123,7 +125,10 @@ func (h *Handler) Update(c *gin.Context) {
 		input.NameDegree,
 		input.VisaType,
 		input.Source,
+		input.SourceCategory,
+		input.VisaGrantedAt,
 		input.TranslationQuota,
+		input.HasInitialTranslations,
 		actorID,
 	)
 	if err != nil {

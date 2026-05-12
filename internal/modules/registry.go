@@ -18,6 +18,7 @@ import (
 	generatestatementletterai "github.com/username/gin-gorm-api/internal/modules/generate-statement-letter-ai"
 	informationcountrymanagement "github.com/username/gin-gorm-api/internal/modules/information-country-management"
 	"github.com/username/gin-gorm-api/internal/modules/notes-student"
+	"github.com/username/gin-gorm-api/internal/modules/promo"
 	"github.com/username/gin-gorm-api/internal/modules/questions"
 	sponsorletteraiapprovals "github.com/username/gin-gorm-api/internal/modules/sponsor-letter-ai-approvals"
 	"github.com/username/gin-gorm-api/internal/modules/stages-management"
@@ -54,4 +55,5 @@ func RegisterAll(rg *gin.RouterGroup, db *gorm.DB) {
 	ticketmessage.RegisterRoutes(rg, db)
 	informationcountrymanagement.RegisterRoutes(rg, db)
 	visatype.RegisterRoutes(rg, db)
+	promo.RegisterRoutes(rg, db)
 }
