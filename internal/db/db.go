@@ -19,7 +19,8 @@ func ConnectDB() {
 	}
 
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Info),
+		Logger:                                   logger.Default.LogMode(logger.Info),
+		DisableForeignKeyConstraintWhenMigrating: true,
 	})
 	if err != nil {
 		log.Fatalf("failed to connect database: %v", err)
