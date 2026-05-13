@@ -91,7 +91,66 @@ func Migrate(db *gorm.DB) error {
 		{
 			ID: "20260304090000_init",
 			Migrate: func(tx *gorm.DB) error {
-				return tx.AutoMigrate(AllModels()...)
+				// Migrate in deterministic phases to avoid MySQL FK ordering issues
+				// when creating inter-dependent tables on a fresh database.
+				phases := [][]interface{}{
+					{
+						&User{},
+						&NoteStudent{},
+						&CountryManagement{},
+						&DocumentsManagement{},
+						&StepsManagement{},
+						&ChildStepsManagement{},
+						&VisaTypeManagement{},
+						&StageManagement{},
+						&CountryStepsManagement{},
+					},
+					{
+						&ChatConversation{},
+						&ChatConversationMember{},
+						&ChatMessage{},
+						&ChatMessageAttachment{},
+						&ChatMessageStatus{},
+						&ChatMessageMention{},
+					},
+					{
+						&QuestionBase{},
+						&Question{},
+						&QuestionOption{},
+						&AnswerSubmission{},
+						&AnswerQuestion{},
+						&AnswerSelectedOption{},
+						&AnswerDocument{},
+						&AnswerApproval{},
+						&AnswerDocumentApproval{},
+					},
+					{
+						&GeneratedCVAIDocument{},
+						&GeneratedStatementLetterAIDocument{},
+						&GeneratedSponsorLetterAIDocument{},
+					},
+					{
+						&StatementLetterAIApproval{},
+						&StatementLetterAIApprovalLog{},
+						&SponsorLetterAIApproval{},
+						&SponsorLetterAIApprovalLog{},
+					},
+					{
+						&DocumentTranslation{},
+						&TicketMessage{},
+						&InformationCountryManagement{},
+						&Promo{},
+						&PasswordResetOTP{},
+					},
+				}
+
+				for _, models := range phases {
+					if err := tx.AutoMigrate(models...); err != nil {
+						return err
+					}
+				}
+
+				return nil
 			},
 			Rollback: func(tx *gorm.DB) error {
 				return nil
