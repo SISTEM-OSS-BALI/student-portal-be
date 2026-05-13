@@ -459,7 +459,7 @@ type GeneratedStatementLetterAIDocument struct {
 
 	CurrentApprovalID *string `json:"current_approval_id,omitempty" gorm:"size:25;index"`
 
-	CurrentApproval *StatementLetterAIApproval  `json:"current_approval,omitempty" gorm:"foreignKey:CurrentApprovalID;references:ID"`
+	CurrentApproval *StatementLetterAIApproval  `json:"current_approval,omitempty" gorm:"foreignKey:CurrentApprovalID;references:ID;constraint:false;"`
 	Approvals       []StatementLetterAIApproval `json:"approvals,omitempty" gorm:"foreignKey:DocumentID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 	CreatedAt       time.Time                   `json:"created_at"`
 	UpdatedAt       time.Time                   `json:"updated_at"`
@@ -521,7 +521,7 @@ type GeneratedSponsorLetterAIDocument struct {
 
 	CurrentApprovalID *string `json:"current_approval_id,omitempty" gorm:"size:25;index"`
 
-	CurrentApproval *SponsorLetterAIApproval  `json:"current_approval,omitempty" gorm:"foreignKey:CurrentApprovalID;references:ID"`
+	CurrentApproval *SponsorLetterAIApproval  `json:"current_approval,omitempty" gorm:"foreignKey:CurrentApprovalID;references:ID;constraint:false;"`
 	Approvals       []SponsorLetterAIApproval `json:"approvals,omitempty" gorm:"foreignKey:DocumentID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 	CreatedAt       time.Time                 `json:"created_at"`
 	UpdatedAt       time.Time                 `json:"updated_at"`
