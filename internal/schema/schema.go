@@ -468,7 +468,7 @@ type GeneratedStatementLetterAIDocument struct {
 type StatementLetterAIApproval struct {
 	ID         string                              `json:"id" gorm:"primaryKey;size:25"`
 	DocumentID string                              `json:"document_id" gorm:"size:25;not null;index"`
-	Document   *GeneratedStatementLetterAIDocument `json:"document,omitempty" gorm:"foreignKey:DocumentID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	Document   *GeneratedStatementLetterAIDocument `json:"document,omitempty" gorm:"foreignKey:DocumentID;references:ID;constraint:false;"`
 
 	ReviewerID string `json:"reviewer_id" gorm:"size:25;not null;index"`
 	Reviewer   *User  `json:"reviewer,omitempty" gorm:"foreignKey:ReviewerID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:RESTRICT;"`
@@ -530,7 +530,7 @@ type GeneratedSponsorLetterAIDocument struct {
 type SponsorLetterAIApproval struct {
 	ID         string                            `json:"id" gorm:"primaryKey;size:25"`
 	DocumentID string                            `json:"document_id" gorm:"size:25;not null;index"`
-	Document   *GeneratedSponsorLetterAIDocument `json:"document,omitempty" gorm:"foreignKey:DocumentID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	Document   *GeneratedSponsorLetterAIDocument `json:"document,omitempty" gorm:"foreignKey:DocumentID;references:ID;constraint:false;"`
 
 	ReviewerID string `json:"reviewer_id" gorm:"size:25;not null;index"`
 	Reviewer   *User  `json:"reviewer,omitempty" gorm:"foreignKey:ReviewerID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:RESTRICT;"`
